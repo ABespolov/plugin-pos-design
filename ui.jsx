@@ -349,6 +349,59 @@ function MenuGrid({ children }) {
   );
 }
 
+// ─── Field — a labelled input ────────────────────────────────
+// The shell STYLE_GUIDE asked for: Card is content-only, an input needs its own
+// surface with no card padding. The label is a real <label>, so the tap target
+// includes the word, not only the box.
+//
+// `prefix` sits inside the border and is not part of the value — a price field
+// shows the currency without the manager having to type it.
+function Field({ label, value, placeholder, prefix, inputMode, id, onChange }) {
+  return (
+    <label htmlFor={id} style={{ display: 'block', cursor: 'text' }}>
+      <Label style={{ marginBottom: 'var(--s-8)' }}>{label}</Label>
+      <span style={{
+        display: 'flex', alignItems: 'center', gap: 'var(--s-4)',
+        height: 'var(--h-md)', padding: '0 var(--pad-card)',
+        background: 'var(--c-surface)', border: '1px solid var(--c-line-strong)',
+        borderRadius: 'var(--r-md)',
+      }}>
+        {prefix && <span style={{ color: 'var(--c-ink-soft)', fontSize: 'var(--t-body)' }}>{prefix}</span>}
+        <input
+          id={id} value={value} placeholder={placeholder} onChange={onChange}
+          inputMode={inputMode} autoComplete="off" spellCheck={false}
+          style={{
+            flex: 1, minWidth: 0, height: '100%',
+            border: 'none', outline: 'none', background: 'transparent',
+            fontFamily: 'inherit', fontSize: 'var(--t-body)', color: 'var(--c-ink)',
+            fontVariantNumeric: 'tabular-nums',
+          }}/>
+      </span>
+    </label>
+  );
+}
+
+// ─── Sheet — a decision that blocks the screen behind it ─────
+// The one place the system allows a shadow, and it is spent here: this is not a
+// panel sitting on the page, it is a thing floating over it that wants an answer.
+function Sheet({ children, onDismiss }) {
+  return (
+    <div onClick={onDismiss} style={{
+      position: 'absolute', inset: 0, zIndex: 40,
+      background: 'var(--c-scrim)',
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--c-surface)',
+        borderRadius: 'var(--r-xl) var(--r-xl) 0 0',
+        boxShadow: 'var(--shadow-sheet)',
+        padding: 'var(--s-24) var(--pad-phone) var(--s-40)',
+        overscrollBehavior: 'contain',
+      }}>{children}</div>
+    </div>
+  );
+}
+
 // ─── Item row — one MenuItem in the Manager's list ───────────
 // The row opens the editor; the switch changes availability without leaving.
 // Sold out is NOT greyed here, unlike the POS tile: on the counter grey means
@@ -360,7 +413,9 @@ function MenuGrid({ children }) {
 // button is invalid. Toggle stops its own click from reaching the row.
 function ItemRow({ name, price, available, onOpen, onToggle }) {
   return (
-    <div role="button" tabIndex={0} onClick={onOpen} data-row style={{
+    <div role="button" tabIndex={0} onClick={onOpen} data-row
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen && onOpen(); } }}
+      style={{
       display: 'flex', alignItems: 'center', gap: 'var(--s-12)',
       padding: '0 var(--pad-card)', height: 'var(--h-order-row)',
       cursor: 'pointer', transition: 'background var(--dur-ui) var(--ease-out)',
@@ -441,6 +496,6 @@ function OrderLine({ name, qty, price, blocked, live, emphasis, onDec, onInc, on
 
 Object.assign(window, {
   Btn, Card, Slab, LiveEdge, Chip, Tag, Label, Money, Heading, Toggle, Rule, SectionHead,
-  Stepper, MenuTile, MenuGrid, OrderLine, ItemRow, ItemGroup, ORDER_ROW_H,
+  Stepper, MenuTile, MenuGrid, OrderLine, ItemRow, ItemGroup, Field, Sheet, ORDER_ROW_H,
   Icon: I, ico,
 });

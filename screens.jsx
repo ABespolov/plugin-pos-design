@@ -8,7 +8,11 @@
 // The first artboard of each screen is the working prototype; the rest are
 // stills of states it passes through too fast to review.
 
-const { Slab, Rule, Label, Money, Tag, Btn, Chip, MenuTile, MenuGrid, OrderLine, ItemRow, ItemGroup, ORDER_ROW_H, Icon: I } = window;
+const {
+  Card, Slab, Rule, Label, Money, Tag, Heading, Btn, Chip, Toggle,
+  MenuTile, MenuGrid, OrderLine, ItemRow, ItemGroup, Field, Sheet,
+  ORDER_ROW_H, Icon: I,
+} = window;
 
 // Fixture data. MenuItem is name · price · category · available and nothing else;
 // an Order line is an item plus a quantity, and the total is DERIVED from them —
@@ -353,4 +357,94 @@ function ManagerMenu({ state }) {
   );
 }
 
-Object.assign(window, { POSOrder, ManagerMenu });
+// Manager — one item's four fields, and the only place it can be destroyed.
+// Delete sits at the END of the form, as far from Save as the screen allows,
+// and it asks first — naming the item, because "Delete item?" cannot tell the
+// manager they picked the wrong row.
+//
+// state: 'new'     creating, so no delete and nothing to prefill
+//        'delete'  the confirmation, frozen open
+const EDITING = ITEM['Almond Croissant'];
+
+function ManagerItemEdit({ state }) {
+  const isNew = state === 'new';
+  const [name, setName] = React.useState(isNew ? '' : EDITING.name);
+  const [price, setPrice] = React.useState(isNew ? '' : EDITING.price.toFixed(2));
+  const [cat, setCat] = React.useState(isNew ? MENU[0].category : 'Pastry');
+  const [available, setAvailable] = React.useState(isNew ? true : EDITING.available);
+  const [confirming, setConfirming] = React.useState(state === 'delete');
+
+  return (
+    <div className="app-screen" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '52px var(--pad-phone) var(--s-8)', flexShrink: 0 }}>
+        <Btn kind="ghost" size="sm" icon={I.chevronLeft}
+          style={{ marginLeft: 'calc(-1 * var(--s-12))' }}>Cancel</Btn>
+      </div>
+
+      <div style={{
+        flex: 1, minHeight: 0, overflow: 'auto',
+        padding: '0 var(--pad-phone)', display: 'flex', flexDirection: 'column', gap: 'var(--s-20)',
+      }}>
+        <Field id="item-name" label="Name" value={name} placeholder="Flat White…"
+          onChange={e => setName(e.target.value)}/>
+
+        {/* inputMode decimal puts a number pad under the thumb; the currency is
+            the field's, not something the manager has to type */}
+        <Field id="item-price" label="Price" value={price} placeholder="0.00…"
+          prefix="$" inputMode="decimal" onChange={e => setPrice(e.target.value)}/>
+
+        <div>
+          <Label style={{ marginBottom: 'var(--s-8)' }}>Category</Label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--s-8)' }}>
+            {MENU.map(g => (
+              <Chip key={g.category} on={g.category === cat} onClick={() => setCat(g.category)}>
+                {g.category}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-16)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 'var(--t-body)', fontWeight: 500 }}>Available</div>
+              <div style={{ fontSize: 'var(--t-body-sm)', color: 'var(--c-ink-soft)', marginTop: 2 }}>
+                {available ? 'On the menu now.' : 'Hidden from the counter.'}
+              </div>
+            </div>
+            <Toggle on={available} onChange={() => setAvailable(v => !v)} blockedWhenOff
+              label="Available"/>
+          </div>
+        </Card>
+
+        {/* Last in the form and nowhere near Save — the empty space between them
+            is the point. Loud enough to find, far enough not to be hit by the
+            thumb reaching for the black button. */}
+        {!isNew && (
+          <Btn kind="blocked" full icon={I.trash} onClick={() => setConfirming(true)}
+            style={{ marginTop: 'var(--s-16)' }}>Delete item</Btn>
+        )}
+      </div>
+
+      <div style={{ padding: 'var(--s-16) var(--pad-phone) var(--s-40)', flexShrink: 0 }}>
+        <Btn kind="slab" full>{isNew ? 'Add item' : 'Save changes'}</Btn>
+      </div>
+
+      {confirming && (
+        <Sheet onDismiss={() => setConfirming(false)}>
+          <Heading size="sub">Delete {EDITING.name}?</Heading>
+          <div style={{
+            fontSize: 'var(--t-body)', color: 'var(--c-ink-soft)',
+            lineHeight: 1.5, margin: 'var(--s-8) 0 var(--s-24)',
+          }}>It leaves the counter immediately. This cannot be undone.</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-8)' }}>
+            <Btn kind="blocked" full onClick={() => setConfirming(false)}>Delete</Btn>
+            <Btn kind="ghost" full onClick={() => setConfirming(false)}>Cancel</Btn>
+          </div>
+        </Sheet>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, { POSOrder, ManagerMenu, ManagerItemEdit });

@@ -47,6 +47,9 @@
   --c-blocked-soft: #f4e4e0;
 
   --c-focus: #0a0a0a;
+  /* Behind a sheet that demands an answer. Ink, not black, and not so dark that
+     the screen underneath stops being legible context. */
+  --c-scrim: rgba(10, 10, 10, 0.44);
 
   /* ── Hover — pointer only ─────────────────────────────────────
      The POS is a touch device, but the brief says it also has to survive as

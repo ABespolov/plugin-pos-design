@@ -100,6 +100,10 @@
   --h-sm: 36px;
   --h-md: 48px;
   --h-lg: 60px;
+  /* One order line. Every container that holds lines is a multiple of this, so
+     a row can never come to rest sliced in half. Mirrored as ORDER_ROW_H in
+     ui.jsx, which needs the number to do that arithmetic. */
+  --h-order-row: 64px;
 
   /* ── Elevation: there isn't any ───────────────────────────────
      Hierarchy comes from hairlines and from inverting the surface.
@@ -111,7 +115,20 @@
   --dur-ui: 180ms;
   --dur-live: 2000ms;  /* how long a live edge stays lit before fading */
 
+  /* A tap on the menu lands in the order panel, which is nowhere near the
+     finger. Motion is what connects the two. When the line already existed only
+     its quantity changes, so instead it takes a brief emphasis — long enough to
+     find with the eye, far short of the 500ms where product UI turns sluggish. */
+  --dur-emphasis: 320ms;
+  --dur-sheet: 280ms;   /* the ticket opening over the menu and closing again */
+
   /* ── Component defaults ───────────────────────────────────── */
+  /* The screen margin, held by everything at the edge — chips, tiles, order
+     rows, the total. 32 rather than 24 because the total is set at 56px, and a
+     numeral that size needs optical room a line of 14px text does not: at 24
+     the gap is under half the cap height and the money looks jammed against
+     the glass. One margin, so the price column still terminates on one edge. */
+  --pad-screen: 32px;
   --pad-card: 16px;
   --gap-row: 12px;
 }
@@ -126,6 +143,20 @@
   0%, 70% { opacity: 1; }
   100%    { opacity: 0; }
 }
+/* A line arriving in the order. It opens from nothing to one row, so the lines
+   under it are pushed down BY the same motion instead of teleporting while the
+   new one slides — one movement in the frame, not two fighting each other.
+   Layout animation is the cost; on a single 64px row it is worth paying, and it
+   is `AnimatedSize`, not a web-only trick. */
+@keyframes app-line-in {
+  from { height: 0; opacity: 0; }
+  to   { height: var(--h-order-row); opacity: 1; }
+}
+/* A quantity changing on a line already in the ticket. */
+@keyframes app-emphasis {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
 
 /* Motion is decoration: every animated surface still renders, it just stops
    moving. A live edge that cannot animate stays lit rather than vanishing —
@@ -133,7 +164,11 @@
    run it straight to the final keyframe and the signal would never be seen at
    all. Reduced motion must not cost a user the product's one real-time cue. */
 @media (prefers-reduced-motion: reduce) {
-  *:not([data-live-edge]) { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  *:not([data-live-edge]) {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
   [data-live-edge] { animation: none !important; opacity: 1 !important; }
 }
 

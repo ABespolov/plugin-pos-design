@@ -120,20 +120,20 @@ If a showcase artboard is ever genuinely needed, it MUST import and render the
 **real** component off `window` and only vary props — never reproduce its markup.
 A re-implemented copy silently drifts.
 
-## Canvas layout — state variants stack vertically
+## Canvas layout — artboards sit side by side
 
-State variants of one screen (empty cart vs filled, item available vs sold out)
-go in a single **vertical column** — main on top, variants below — via a shared
-`groupId`:
+Every artboard in a section is its own column, laid out **left to right**. States
+of one screen read as a row you scan across, not a stack you scroll down.
 
 ```jsx
-<W.DCArtboard groupId="pos-order" id="pos-order" label="POS · order" …>…</W.DCArtboard>
-<W.DCArtboard groupId="pos-order" id="pos-order-empty" label="POS · empty order" …>…</W.DCArtboard>
+<W.DCArtboard id="pos-order" label="POS · menu & order — INTERACTIVE" …>…</W.DCArtboard>
+<W.DCArtboard id="pos-order-empty" label="POS · empty order" …>…</W.DCArtboard>
+<W.DCArtboard id="pos-order-live" label="POS · item just went sold out" …>…</W.DCArtboard>
 ```
 
-**Group:** state variants of the same screen.
-**Don't group:** sequential flow steps, the two different apps, or artboards of
-different sizes.
+**Don't pass `groupId`.** It exists in the canvas and stacks artboards into one
+vertical column — that is not how this board is laid out. Order the row
+deliberately: the interactive prototype first, then its states.
 
 ## Every screen ships one live prototype, not only stills
 

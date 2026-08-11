@@ -31,6 +31,7 @@ const I = {
   chevronLeft:  ico('ChevronLeft', 20),
   chevronRight: ico('ChevronRight', 18),
   chevronDown:  ico('ChevronDown', 18),
+  chevronUp:    ico('ChevronUp', 18),
   more:         ico('MoreHorizontal', 20),
   pencil:       ico('Pencil', 18),
   trash:        ico('Trash2', 18),
@@ -41,6 +42,12 @@ const I = {
 // hit without looking, and with no imagery in the model three columns still read
 // as a list of names rather than a wall.
 const MENU_COLUMNS = 3;
+
+// Mirrors --h-order-row in tokens.css, which is where the row height actually
+// lives; this copy exists because the slab has to do arithmetic with it. Every
+// order line is exactly this tall, including the taller-looking one carrying a
+// Sold out tag — a ticket showing 3.2 rows would always cut one of them.
+const ORDER_ROW_H = 64;
 
 // ─── Button ──────────────────────────────────────────────────
 // `slab` is the primary: black fill, white label — the brand made black its
@@ -130,10 +137,13 @@ function LiveEdge({ side = 'left', hold }) {
 }
 
 // ─── Chip — selectable filter (category tabs, sections) ──────
-function Chip({ children, on, onClick, icon, sm }) {
+// `lg` is the POS size: a chip that switches the whole menu is hit as often as
+// the items themselves, so it gets the same 48 as every other counter control.
+function Chip({ children, on, onClick, icon, size = 'md' }) {
+  const heights = { sm: 32, md: 'var(--h-sm)', lg: 'var(--h-md)' };
   return (
     <button onClick={onClick} style={{
-      height: sm ? 32 : 'var(--h-sm)', padding: '0 var(--s-16)', borderRadius: 'var(--r-pill)',
+      height: heights[size], padding: '0 var(--s-20)', borderRadius: 'var(--r-pill)',
       background: on ? 'var(--c-ink)' : 'var(--c-surface-tint)',
       color: on ? 'var(--c-on-action)' : 'var(--c-ink)',
       border: 'none',
@@ -300,7 +310,8 @@ function MenuTile({ name, price, available = true, live, onClick }) {
         color: available ? 'var(--c-ink)' : 'var(--c-ink-soft)',
         fontFamily: 'inherit', textAlign: 'left',
         cursor: available ? 'pointer' : 'default',
-        transition: 'background var(--dur-ui) var(--ease-out)',
+        // named properties, never `all` — `all` would animate the layout too
+        transition: 'background var(--dur-ui) var(--ease-out), transform 90ms var(--ease-out)',
       }}>
       {live && <LiveEdge hold={live === 'hold'}/>}
       {/* name left, money right — the price column runs down the whole screen and
@@ -318,16 +329,16 @@ function MenuTile({ name, price, available = true, live, onClick }) {
   );
 }
 
-// ─── Menu group — one category of the menu ───────────────────
-// Category is named once, here, by the micro-label — not repeated on every tile.
-function MenuGroup({ category, children }) {
+// ─── Menu grid ───────────────────────────────────────────────
+// One category's items. The category is named by the selected chip above, not
+// repeated here — and because only one category is ever on screen, an item sits
+// at the same coordinates every time the cashier picks that chip. Stacked
+// sections cannot promise that: where an item lands depends on the scroll.
+function MenuGrid({ children }) {
   return (
-    <section style={{ marginBottom: 'var(--s-32)' }}>
-      <Label style={{ marginBottom: 'var(--s-12)' }}>{category}</Label>
-      <div style={{
-        display: 'grid', gridTemplateColumns: `repeat(${MENU_COLUMNS}, 1fr)`, gap: 'var(--s-12)',
-      }}>{children}</div>
-    </section>
+    <div style={{
+      display: 'grid', gridTemplateColumns: `repeat(${MENU_COLUMNS}, 1fr)`, gap: 'var(--s-12)',
+    }}>{children}</div>
   );
 }
 
@@ -335,14 +346,27 @@ function MenuGroup({ category, children }) {
 // `price` is the line total; the unit price lives on the menu tile. When the item
 // behind the line goes sold out the stepper is gone — there is nothing left to
 // increment — and the line offers the only move left: take it off.
-function OrderLine({ name, qty, price, blocked, live, onDec, onInc, onRemove }) {
+// `emphasis` is a counter, not a flag: re-tapping the same item has to read as a
+// second event, and changing the key restarts the animation where a boolean
+// would sit there already true.
+function OrderLine({ name, qty, price, blocked, live, emphasis, onDec, onInc, onRemove }) {
   return (
-    <div style={{
+    <div data-line={name} style={{
       position: 'relative',
       display: 'flex', alignItems: 'center', gap: 'var(--s-16)',
-      padding: 'var(--s-8) var(--s-24)', minHeight: 64,
+      padding: '0 var(--pad-screen)', height: 'var(--h-order-row)', flexShrink: 0,
+      // clipped so the content does not spill while the row opens
+      overflow: 'hidden',
+      animation: 'app-line-in var(--dur-ui) var(--ease-out)',
     }}>
       {live && <LiveEdge hold={live === 'hold'}/>}
+      {emphasis > 0 && (
+        <span key={emphasis} aria-hidden style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'var(--c-on-slab-hover)',
+          animation: 'app-emphasis var(--dur-emphasis) var(--ease-out) forwards',
+        }}/>
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 'var(--t-body)', fontWeight: 500, color: 'var(--c-on-slab)',
@@ -360,6 +384,6 @@ function OrderLine({ name, qty, price, blocked, live, onDec, onInc, onRemove }) 
 
 Object.assign(window, {
   Btn, Card, Slab, LiveEdge, Chip, Tag, Label, Money, Heading, Toggle, Rule, SectionHead,
-  Stepper, MenuTile, MenuGroup, OrderLine,
+  Stepper, MenuTile, MenuGrid, OrderLine, ORDER_ROW_H,
   Icon: I, ico,
 });

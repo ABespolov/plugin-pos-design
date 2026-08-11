@@ -128,9 +128,36 @@ get a 44×44 hit area even when the glyph is smaller.
 
 ## Motion
 
-One easing (`--ease-out`), one UI duration (`--dur-ui`, 180ms). The live edge
-has its own `--dur-live` (2s) and holds full opacity for 70% of it, so a cashier
-mid-pour still catches it; only the tail fades.
+One easing, `--ease-out` — everything here is something arriving. Three
+durations, each earned:
+
+- **`--dur-ui` (180ms)** — hover, press, a row arriving. High-frequency, so short.
+- **`--dur-emphasis` (320ms)** — a value changing in place on a line already in
+  the ticket. Long enough to find with the eye, well short of the ~500ms where
+  product UI starts to feel slow.
+- **`--dur-live` (2s)** — the live edge, holding full opacity for 70% of it so a
+  cashier mid-pour still catches it; only the tail fades.
+
+Motion has to do one of three jobs — **feedback**, **continuity** or
+**hierarchy** — and the tap that lands in the order panel needs all three: the
+tap is in one place, the result is in another, and nothing connects them but
+movement.
+
+**One movement per frame.** A new line opens from zero to `--h-order-row`, and
+the lines under it are pushed down *by that same growth*. The earlier version
+slid the new row in while its neighbours jumped 64px instantly — half the frame
+animated, half teleported, which is exactly what reads as jank. If something has
+to move because something else moved, the two must be the same motion. In
+Flutter this is `AnimatedSize`, not a web-only trick.
+
+A line whose quantity merely changed cannot open — it is already there — so it
+takes `--dur-emphasis` of a light overlay instead. Never `transition: all`: name
+the properties, or the layout animates behind your back.
+
+Under `prefers-reduced-motion` durations collapse and nothing travels, but
+nothing is *hidden* either — the live edge in particular stays lit rather than
+being animated away, because losing it would cost that user the product's only
+real-time cue.
 
 ## Components
 
@@ -180,6 +207,63 @@ phone used occasionally and deliberately: standard mobile ergonomics.
 
 **Same tokens and same atoms in both** — the tablet gets more room, not a second
 design language.
+
+### Targets do not move
+
+On the POS the cashier is hitting targets at arm's length, fast, without
+looking down between taps. So **no interaction may re-flow the layout around
+it.** The order slab is a region of fixed height and the lines scroll *inside*
+it; it does not grow with the order, and it keeps that height when the order is
+empty, because a panel that is briefly smaller is the same bug in a smaller
+dose. Its header holds its height whether or not `Clear` is showing. The menu,
+the slab and the total sit at the same y all shift.
+
+That rule is what makes the layout choice: growing panels, content-sized
+sheets, and anything that reflows a grid the user is mid-tap on are out.
+
+**The collapsed ticket does not scroll at all.** It shows the newest few lines
+and nothing else moves; a tap on the menu makes that item the most recent, so
+what you just rang up is always one of them — new or already there. Scrolling
+exists in one place only, inside the expanded sheet, and only once the ticket
+passes what the sheet can show. A region that can't scroll can't be scrolled to
+a position that slices a row, which is most of that problem deleted rather than
+solved. The steppers never re-order: a line must not move out from under the
+finger using it.
+
+It also decides how the menu is organised. **One category at a time, chosen by
+a chip — not stacked sections.** Sections read fine and scroll badly: where an
+item lands depends on how far you have scrolled, so it is never in the same
+place twice. Filtering gives each item fixed coordinates the cashier can learn,
+and it is what the reference products do (Uber Eats category tabs, Google
+Maps' menu tab bars). The selected chip is also the one place the category name
+appears.
+
+And it is why a scrolling region is an exact number of whole rows high. A list
+showing 3.2 rows has no resting position that doesn't slice one in half, so
+every row is a fixed height and every container that holds rows is derived from
+it — never a number picked by eye.
+
+Deliberate mode changes are exempt. Expanding the ticket moves the layout on
+purpose, because the user asked for it; that is not the same as a tap on a menu
+item rearranging the menu.
+
+### Where this knowingly leaves the industry standard
+
+Square and Toast both build the cashier screen as a **configurable grid of
+tiles grouped into menu groups** — that part we match, and it is why the menu is
+a 3-up grid switched by category chips rather than a scrolling list.
+
+Three places we diverge on purpose. Each is a decision, not an oversight:
+
+| We do | The standard | Why |
+|---|---|---|
+| **Portrait**, ticket pinned at the bottom | Landscape, ticket a permanent right-hand rail | A counter stand is often vertical. The cost is real: only three lines are visible at rest, which is what makes the expand sheet necessary at all. In landscape the whole ticket is always on screen and that machinery disappears. |
+| **Newest line first** | Chronological, newest appended last | The line just rung up is the one that has to be seen, and at the top it needs no scroll. A repeat tap only changes quantity — it never re-orders, or a line would move under the finger. |
+| **No search, no favourites page** | Both, once a menu passes ~40 items | Out of scope for now, not a claim that it is unnecessary. It is the first thing to add if the menu grows. |
+
+Refero has no coverage of cashier-facing POS, so those rows are grounded in
+Square and Toast's own product documentation rather than in reference screens.
+Weaker evidence than the rest of this file, and worth saying out loud.
 
 ## Flutter portability
 

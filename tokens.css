@@ -123,12 +123,13 @@
   --dur-sheet: 280ms;   /* the ticket opening over the menu and closing again */
 
   /* ── Component defaults ───────────────────────────────────── */
-  /* The screen margin, held by everything at the edge — chips, tiles, order
-     rows, the total. 32 rather than 24 because the total is set at 56px, and a
-     numeral that size needs optical room a line of 14px text does not: at 24
-     the gap is under half the cap height and the money looks jammed against
-     the glass. One margin, so the price column still terminates on one edge. */
-  --pad-screen: 32px;
+  /* Screen margins. One per device, because they are not the same room.
+     Tablet 32 rather than 24: the total is set at 56px and a numeral that size
+     needs optical space a line of 14px does not — at 24 the gap is under half
+     the cap height and the money looks jammed against the glass. Phone 16 is
+     the iOS list inset; 32 on a 390-wide screen would eat the content. */
+  --pad-tablet: 32px;
+  --pad-phone: 16px;
   --pad-card: 16px;
   --gap-row: 12px;
 }
@@ -195,7 +196,8 @@
 
 /* Interaction states */
 @media (hover: hover) {
-  .app-screen [data-tile]:hover:not([aria-disabled='true'])   { background: var(--c-surface-hover); }
+  .app-screen [data-tile]:hover:not([aria-disabled='true']),
+  .app-screen [data-row]:hover                                { background: var(--c-surface-hover); }
   .app-screen button[data-kind='slab']:hover:not(:disabled)   { background: var(--c-action-press); }
   .app-screen button[data-kind='onslab']:hover:not(:disabled),
   .app-screen [data-onslab-icon]:hover                        { background: var(--c-on-slab-hover); }

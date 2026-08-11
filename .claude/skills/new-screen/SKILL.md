@@ -148,7 +148,7 @@ every one and write down the answer, not a tick.
 - [ ] All nine slop-gate checks answered in writing, not ticked
 - [ ] All states drawn, not just the happy one
 - [ ] Renders clean: `_live.html?s=<Name>` (`&d=tablet` for POS), no console errors
-- [ ] Artboard added to `index.html`; state variants share a `groupId`
+- [ ] Artboard added to `index.html` — prototype first, then its states, side by side. Never `groupId`
 - [ ] Nothing on screen that the data model can't supply
 - [ ] Reads at arm's length: 16px body, 48px controls, price column aligned
 

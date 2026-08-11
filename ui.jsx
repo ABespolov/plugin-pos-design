@@ -223,15 +223,22 @@ function Heading({ children, size = 'h', style = {} }) {
 // ─── Toggle ──────────────────────────────────────────────────
 // The manager's sold-out switch. Off is not "grey neutral" — it is blocked, so
 // the off track carries the blocked hue and the state is readable at a glance.
+// When off means *blocked*, on must go quiet. A list of forty rows where every
+// available one wears the system's strongest ink is a black picket fence: the
+// majority state ends up shouting and the two rows that actually need attention
+// are outnumbered. Available carries no colour — that is the whole rule — so the
+// on track drops to the same neutral the component already uses for a track,
+// and red is left as the only hue on the screen.
 function Toggle({ on = false, onChange, label, blockedWhenOff }) {
   const offBg = blockedWhenOff ? 'var(--c-blocked)' : 'var(--c-line-strong)';
+  const onBg = blockedWhenOff ? 'var(--c-ink-faint)' : 'var(--c-ink)';
   return (
     <button
       type="button" role="switch" aria-checked={on} aria-label={label}
       onClick={(e) => { e.stopPropagation(); onChange && onChange(); }}
       style={{
         width: 52, height: 32, borderRadius: 'var(--r-pill)', border: 'none', flexShrink: 0,
-        background: on ? 'var(--c-ink)' : offBg,
+        background: on ? onBg : offBg,
         padding: 3, cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
         justifyContent: on ? 'flex-end' : 'flex-start',
         transition: 'background var(--dur-ui) var(--ease-out)',
@@ -342,6 +349,56 @@ function MenuGrid({ children }) {
   );
 }
 
+// ─── Item row — one MenuItem in the Manager's list ───────────
+// The row opens the editor; the switch changes availability without leaving.
+// Sold out is NOT greyed here, unlike the POS tile: on the counter grey means
+// "you cannot tap this", and on this screen a sold-out item is exactly the one
+// the manager most needs to tap. Same state, different decoration, because the
+// affordance is the opposite.
+//
+// A <div> and not a <button>: it contains the Toggle, and a button inside a
+// button is invalid. Toggle stops its own click from reaching the row.
+function ItemRow({ name, price, available, onOpen, onToggle }) {
+  return (
+    <div role="button" tabIndex={0} onClick={onOpen} data-row style={{
+      display: 'flex', alignItems: 'center', gap: 'var(--s-12)',
+      padding: '0 var(--pad-card)', height: 'var(--h-order-row)',
+      cursor: 'pointer', transition: 'background var(--dur-ui) var(--ease-out)',
+    }}>
+      <span style={{
+        flex: 1, minWidth: 0, fontSize: 'var(--t-body)', fontWeight: 500,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{name}</span>
+      {/* fixed column, so a two-digit price does not shove its neighbours out
+          of line — every price on this screen lands on one edge */}
+      <Money value={price} size="body-sm"
+        style={{ width: 64, textAlign: 'right', color: 'var(--c-ink-soft)', flexShrink: 0 }}/>
+      <Toggle on={available} onChange={onToggle} blockedWhenOff label={`${name} available`}/>
+    </div>
+  );
+}
+
+// ─── Item group — one category of the Manager's list ─────────
+// The grouped list: category named once above a white card, rows inside it
+// divided by hairlines. The card is the system's surface and the iOS
+// convention at the same time.
+function ItemGroup({ category, children }) {
+  const rows = React.Children.toArray(children);
+  return (
+    <section style={{ marginBottom: 'var(--s-24)' }}>
+      <Label style={{ marginBottom: 'var(--s-8)', paddingLeft: 'var(--pad-card)' }}>{category}</Label>
+      <Card padded={false}>
+        {rows.map((row, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <Rule style={{ marginLeft: 'var(--pad-card)' }}/>}
+            {row}
+          </React.Fragment>
+        ))}
+      </Card>
+    </section>
+  );
+}
+
 // ─── Order line — one line of the running order, on the slab ──
 // `price` is the line total; the unit price lives on the menu tile. When the item
 // behind the line goes sold out the stepper is gone — there is nothing left to
@@ -354,7 +411,7 @@ function OrderLine({ name, qty, price, blocked, live, emphasis, onDec, onInc, on
     <div data-line={name} style={{
       position: 'relative',
       display: 'flex', alignItems: 'center', gap: 'var(--s-16)',
-      padding: '0 var(--pad-screen)', height: 'var(--h-order-row)', flexShrink: 0,
+      padding: '0 var(--pad-tablet)', height: 'var(--h-order-row)', flexShrink: 0,
       // clipped so the content does not spill while the row opens
       overflow: 'hidden',
       animation: 'app-line-in var(--dur-ui) var(--ease-out)',
@@ -384,6 +441,6 @@ function OrderLine({ name, qty, price, blocked, live, emphasis, onDec, onInc, on
 
 Object.assign(window, {
   Btn, Card, Slab, LiveEdge, Chip, Tag, Label, Money, Heading, Toggle, Rule, SectionHead,
-  Stepper, MenuTile, MenuGrid, OrderLine, ORDER_ROW_H,
+  Stepper, MenuTile, MenuGrid, OrderLine, ItemRow, ItemGroup, ORDER_ROW_H,
   Icon: I, ico,
 });

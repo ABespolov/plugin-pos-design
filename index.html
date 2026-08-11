@@ -73,8 +73,11 @@ function App() {
 
       <W.DCSection id="manager" title="Manager · phone"
         subtitle="Create, edit, delete menu items and flip them sold out. Every change lands on the POS in real time.">
-        <W.DCArtboard id="manager-menu" label="Manager · menu list" width={PHONE_W + PAD} height={PHONE_H + PAD}>
+        <W.DCArtboard id="manager-menu" label="Manager · menu list — INTERACTIVE" width={PHONE_W + PAD} height={PHONE_H + PAD}>
           <Phone><W.ManagerMenu/></Phone>
+        </W.DCArtboard>
+        <W.DCArtboard id="manager-menu-empty" label="Manager · empty menu" width={PHONE_W + PAD} height={PHONE_H + PAD}>
+          <Phone><W.ManagerMenu state="empty"/></Phone>
         </W.DCArtboard>
       </W.DCSection>
     </W.DesignCanvas>

@@ -5,10 +5,10 @@
 //   POS…      tablet / web — read the live menu, build an order, running total
 //   Manager…  phone        — CRUD menu items, toggle sold out
 //
-// Both placeholders below are scaffolding. Delete each one as its real screen
-// lands; nothing here is a design decision.
+// The first artboard of each screen is the working prototype; the rest are
+// stills of states it passes through too fast to review.
 
-const { Card, SectionHead, Slab, Rule, Label, Money, Btn, Chip, MenuTile, MenuGrid, OrderLine, ORDER_ROW_H, Icon: I } = window;
+const { Slab, Rule, Label, Money, Tag, Btn, Chip, MenuTile, MenuGrid, OrderLine, ItemRow, ItemGroup, ORDER_ROW_H, Icon: I } = window;
 
 // Fixture data. MenuItem is name · price · category · available and nothing else;
 // an Order line is an item plus a quantity, and the total is DERIVED from them —
@@ -110,23 +110,6 @@ const SLAB_TOTAL_H = 108;
 const slabHeight = rows => SLAB_HEAD_H + ORDER_ROW_H * rows + 1 + SLAB_TOTAL_H;
 const SLAB_H = slabHeight(SLAB_ROWS);
 
-function Scaffold({ app, screen }) {
-  return (
-    <div className="app-screen" style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--s-24)',
-      background: 'var(--c-paper)',
-    }}>
-      <Card style={{ textAlign: 'center', maxWidth: 420 }}>
-        <SectionHead title={app}/>
-        <div style={{ fontSize: 'var(--t-h)', fontWeight: 700, letterSpacing: -0.4 }}>{screen}</div>
-        <div style={{ fontSize: 'var(--t-body-sm)', color: 'var(--c-ink-soft)', marginTop: 'var(--s-8)', lineHeight: 1.5 }}>
-          Not designed yet.
-        </div>
-      </Card>
-    </div>
-  );
-}
-
 // POS — the whole shift happens here. The menu scrolls on paper; the order is the
 // one near-black slab, anchored at the bottom where the thumb already is.
 //
@@ -201,7 +184,7 @@ function POSOrder({ state }) {
           The selected chip names the category, so nothing else has to. */}
       <div style={{
         display: 'flex', gap: 'var(--s-8)', overflowX: 'auto', flexShrink: 0,
-        padding: 'var(--s-40) var(--pad-screen) var(--s-16)',
+        padding: 'var(--s-40) var(--pad-tablet) var(--s-16)',
       }}>
         {MENU.map(g => (
           <Chip key={g.category} size="lg" on={g.category === cat} onClick={() => setCat(g.category)}>
@@ -210,7 +193,7 @@ function POSOrder({ state }) {
         ))}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 var(--pad-screen)' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 var(--pad-tablet)' }}>
         <MenuGrid>
           {shown.map(item => (
             <MenuTile key={item.name} name={item.name} price={money(item.price)}
@@ -243,7 +226,7 @@ function POSOrder({ state }) {
               data-onslab-icon style={{
                 flex: 1, minWidth: 0,
                 display: 'inline-flex', alignItems: 'center', gap: 'var(--s-12)',
-                padding: '0 var(--pad-screen)', textAlign: 'left',
+                padding: '0 var(--pad-tablet)', textAlign: 'left',
                 background: 'transparent', border: 'none',
                 color: 'var(--c-on-slab)', cursor: 'pointer', fontFamily: 'inherit',
                 transition: 'background var(--dur-ui) var(--ease-out)',
@@ -255,11 +238,11 @@ function POSOrder({ state }) {
               {open ? I.chevronDown : I.chevronUp}
             </button>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', padding: '0 var(--pad-screen)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: '0 var(--pad-tablet)' }}>
               <Label tone="onslab">Order</Label>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', paddingRight: 'var(--pad-screen)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', paddingRight: 'var(--pad-tablet)' }}>
             {lines.length > 0 && <Btn kind="onslab" size="sm" onClick={() => setLines([])}>Clear</Btn>}
           </div>
         </div>
@@ -273,7 +256,7 @@ function POSOrder({ state }) {
         }}>
           {lines.length === 0 ? (
             <div style={{
-              padding: '0 var(--pad-screen)',
+              padding: '0 var(--pad-tablet)',
               fontSize: 'var(--t-body)', color: 'var(--c-on-slab-soft)',
             }}>Tap an item to start.</div>
           ) : ticket.map(line => (
@@ -295,7 +278,7 @@ function POSOrder({ state }) {
           // jammed against the rule with all the slack below it. The padding is
           // what centres it: 20 + the 68 the numeral occupies + 20 = SLAB_TOTAL_H.
           display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-          padding: 'var(--s-20) var(--pad-screen)', height: SLAB_TOTAL_H, flexShrink: 0,
+          padding: 'var(--s-20) var(--pad-tablet)', height: SLAB_TOTAL_H, flexShrink: 0,
         }}>
           <Label tone="onslab">Total</Label>
           <Money value={money(total)} size="display"/>
@@ -305,8 +288,69 @@ function POSOrder({ state }) {
   );
 }
 
-function ManagerMenu() {
-  return <Scaffold app="Manager · phone" screen="Menu list"/>;
+// Manager — the menu's state, and one tap to change availability. No slab
+// surface: there is no money on this screen, so the black is spent on the one
+// action instead. No cyan either — this screen is where changes come FROM, and
+// the live edge means "arrived from somewhere else".
+//
+// state: 'empty'  no items yet
+function ManagerMenu({ state }) {
+  const empty = state === 'empty';
+  const [soldOut, setSoldOut] = React.useState(
+    () => new Set(MENU.flatMap(g => g.items).filter(i => !i.available).map(i => i.name)));
+
+  const toggle = name => setSoldOut(prev => {
+    const next = new Set(prev);
+    next.has(name) ? next.delete(name) : next.add(name);
+    return next;
+  });
+
+  const count = MENU.reduce((n, g) => n + g.items.length, 0);
+
+  return (
+    <div className="app-screen" style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* Status, not a title: "Menu" above a menu says nothing, while the counts
+          answer the question the manager opened the app with. The second line
+          is the one thing they cannot see for themselves — there is no Save
+          here, and no undo. */}
+      <div style={{ padding: '60px var(--pad-phone) var(--s-16)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-8)' }}>
+          <span style={{ fontSize: 'var(--t-body)', fontWeight: 600 }}>
+            {empty ? 'No items yet' : `${count} items`}
+          </span>
+          {!empty && soldOut.size > 0 && <Tag tone="blocked">{soldOut.size} sold out</Tag>}
+        </div>
+        {/* Only where it applies. With nothing in the menu there is nothing to
+            change, and the empty state below already makes the same promise. */}
+        {!empty && (
+          <div style={{ fontSize: 'var(--t-body-sm)', color: 'var(--c-ink-soft)', marginTop: 'var(--s-4)' }}>
+            Changes show on the POS immediately.
+          </div>
+        )}
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 var(--pad-phone)' }}>
+        {empty ? (
+          <div style={{
+            fontSize: 'var(--t-body)', color: 'var(--c-ink-soft)',
+            lineHeight: 1.5, paddingTop: 'var(--s-32)',
+          }}>Add your first item and it appears on the counter straight away.</div>
+        ) : MENU.map(group => (
+          <ItemGroup key={group.category} category={group.category}>
+            {group.items.map(item => (
+              <ItemRow key={item.name} name={item.name} price={money(item.price)}
+                available={!soldOut.has(item.name)}
+                onToggle={() => toggle(item.name)}/>
+            ))}
+          </ItemGroup>
+        ))}
+      </div>
+
+      <div style={{ padding: 'var(--s-16) var(--pad-phone) var(--s-40)', flexShrink: 0 }}>
+        <Btn kind="slab" full icon={I.plus}>New item</Btn>
+      </div>
+    </div>
+  );
 }
 
 Object.assign(window, { POSOrder, ManagerMenu });

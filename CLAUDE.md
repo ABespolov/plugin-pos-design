@@ -135,6 +135,32 @@ go in a single **vertical column** — main on top, variants below — via a sha
 **Don't group:** sequential flow steps, the two different apps, or artboards of
 different sizes.
 
+## Every screen ships one live prototype, not only stills
+
+A wall of frozen frames can't answer *how does it feel* — what a tap does, how
+fast, what hovers, whether the total keeps up, whether a change landing mid-order
+is legible. So each screen gets **one working artboard plus its state stills**:
+
+- **The main artboard is the prototype.** No `state` prop; it holds real React
+  state and really works — taps build the order, steppers count, destructive
+  actions run, derived values recompute. Label it `… — INTERACTIVE`.
+- **State artboards are stills**, driven by `state="…"`, in the same `groupId`
+  column underneath. They exist to pin down moments the prototype passes through
+  too fast to review.
+- **Derive, never hardcode.** The prototype is the proof that the data model
+  works: prices are numbers, the total is a `reduce`. A screen whose total is a
+  string literal cannot be clicked.
+- **Real-time is demonstrated, not described.** The prototype fires the manager
+  edit on a timer so the reviewer is mid-order when an item goes sold out under
+  their thumb. That is the product's whole promise; it has to be felt once.
+- **Animation that ends is invisible in a still.** The live edge spends
+  `--dur-live` and goes. Stills pass `live="hold"` to keep it lit; the prototype
+  passes `live={true}` so it actually plays.
+- **Pointer states are part of the design.** Hover lives in [tokens.css](tokens.css)
+  under `@media (hover: hover)`, keyed off `data-*`, using real color tokens —
+  never `filter: brightness()`, which has no Flutter equivalent. Press is the
+  global `scale(0.985)`.
+
 ## Working agreements
 
 - **Always make components, never write inline soup.** Inline only markup that
@@ -145,11 +171,24 @@ different sizes.
 - **No new files unless required.** Edit existing ones. The system is small on purpose.
 - **Don't add comments** that restate the code. Comment only when the *why* would
   surprise a future reader.
-- **After UI edits, reload the page and verify visually.** Type-checking doesn't
-  catch design regressions.
-- **Verify layout via the live DOM, not screenshots** — inspect the rendered page
-  (`getComputedStyle`, `getBoundingClientRect`, `scrollHeight`) against
-  `_live.html?s=<Screen>`. Fast and exact.
-- **Don't take screenshots unless explicitly asked.**
+- **After UI edits, look at the screen before calling it done.** Type-checking
+  doesn't catch design regressions, and neither do numbers — a tile can measure
+  perfectly and still have a hole in the middle. Screenshot it and judge it.
+
+  ```
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
+    --disable-gpu --hide-scrollbars --screenshot=out.png --window-size=960,1320 \
+    --virtual-time-budget=9000 "http://localhost:8001/_live.html?s=POSOrder&d=tablet"
+  ```
+
+  Shoot **with the device frame** (`d=tablet`, no `frame=0`): the frame is what
+  gives the screen its definite height, so `flex: 1` regions resolve. Frameless
+  captures let the layout run past the bottom edge and look broken when they
+  aren't. Animations that finish (the live edge) are gone by capture time — hold
+  them with `live="hold"`.
+- **Measure the DOM too, for anything a picture can't settle** — exact geometry,
+  token leakage, overflow behaviour: `getComputedStyle`, `getBoundingClientRect`,
+  `scrollHeight` against `_live.html?s=<Screen>`. Eye and ruler catch different
+  bugs; a real check uses both.
 - When the same value (color, padding, height) appears inline more than twice,
   it's a missing token.

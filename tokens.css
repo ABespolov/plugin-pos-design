@@ -48,6 +48,15 @@
 
   --c-focus: #0a0a0a;
 
+  /* ── Hover — pointer only ─────────────────────────────────────
+     The POS is a touch device, but the brief says it also has to survive as
+     web, so pointer states are part of the design rather than a later patch.
+     A white tile settles into the paper ground; nothing brightens, because
+     `filter: brightness()` has no Flutter equivalent — these are real colors
+     and map straight onto `overlayColor`. */
+  --c-surface-hover: #f7f7f5;              /* the paper value, in a hover role */
+  --c-on-slab-hover: rgba(255, 255, 255, 0.08);
+
   /* ── Type ─────────────────────────────────────────────────────
      DM Sans is the brand's default family and carries all UI.
      Instrument Sans is the brand's second face, used ONLY for large
@@ -119,9 +128,13 @@
 }
 
 /* Motion is decoration: every animated surface still renders, it just stops
-   moving. A live edge that cannot animate stays lit rather than vanishing. */
+   moving. A live edge that cannot animate stays lit rather than vanishing —
+   and that needs its own rule, because collapsing its duration to 0.01ms would
+   run it straight to the final keyframe and the signal would never be seen at
+   all. Reduced motion must not cost a user the product's one real-time cue. */
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  *:not([data-live-edge]) { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  [data-live-edge] { animation: none !important; opacity: 1 !important; }
 }
 
 /* Base */
@@ -146,6 +159,14 @@
 .app-screen * { scrollbar-width: none; }
 
 /* Interaction states */
+@media (hover: hover) {
+  .app-screen [data-tile]:hover:not([aria-disabled='true'])   { background: var(--c-surface-hover); }
+  .app-screen button[data-kind='slab']:hover:not(:disabled)   { background: var(--c-action-press); }
+  .app-screen button[data-kind='onslab']:hover:not(:disabled),
+  .app-screen [data-onslab-icon]:hover                        { background: var(--c-on-slab-hover); }
+  .app-screen button[data-kind='outline']:hover:not(:disabled),
+  .app-screen button[data-kind='quiet']:hover:not(:disabled)  { background: var(--c-surface-tint); }
+}
 .app-screen button:not(:disabled):active { transform: scale(0.985); }
 .app-screen button:disabled { opacity: 0.38; cursor: not-allowed; }
 .app-screen :focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }

@@ -56,9 +56,15 @@ function App() {
   return (
     <W.DesignCanvas minScale={0.1} maxScale={3}>
       <W.DCSection id="pos" title="POS · tablet"
-        subtitle="Live menu — name, price, category, availability. Tapping items builds an order with a running total.">
-        <W.DCArtboard id="pos-order" label="POS · menu & order" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+        subtitle="Live menu — name, price, category, availability. Tapping items builds an order with a running total. The first artboard is live: tap the menu, use the steppers, and after 8s a manager edit lands.">
+        <W.DCArtboard groupId="pos-order" id="pos-order" label="POS · menu & order — INTERACTIVE" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
           <Tablet><W.POSOrder/></Tablet>
+        </W.DCArtboard>
+        <W.DCArtboard groupId="pos-order" id="pos-order-empty" label="POS · empty order" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder state="empty"/></Tablet>
+        </W.DCArtboard>
+        <W.DCArtboard groupId="pos-order" id="pos-order-live" label="POS · item just went sold out" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder state="live"/></Tablet>
         </W.DCArtboard>
       </W.DCSection>
 

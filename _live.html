@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Live preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #eceae6; font-family: 'Inter', system-ui, sans-serif; }
+  /* Single-screen harness — NO design canvas, so it stays light enough to
+     screenshot reliably (the full canvas is heavy and times out).
+       ?s=Name        which screen (required in practice)
+       ?d=tablet      device: phone (default) | tablet
+       ?state=…       passed to the screen as a prop
+       ?frame=0       drop the device bezel — bare screen, rounded
+       ?fit=1         natural height, no clipping (always frameless)
+       ?w= / ?h=      override screen size */
+  #stage { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 24px; box-sizing: border-box; }
+  .fit-frame { background: var(--c-page); border-radius: 24px; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.14); position: relative; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@1.14.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+<div id="stage"></div>
+
+<script type="text/babel" src="starters/ios-frame.jsx"></script>
+<script type="text/babel" src="starters/tablet-frame.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const W = window;
+
+const P = new URLSearchParams(location.search);
+const name   = P.get('s') || 'POSOrder';
+const state  = P.get('state') || undefined;
+const fit    = P.get('fit') === '1';
+const tablet = P.get('d') === 'tablet';
+const Wd = parseInt(P.get('w') || (tablet ? '834' : '390'), 10);
+const H  = parseInt(P.get('h') || (tablet ? '1194' : '844'), 10);
+const bezel = P.get('frame') !== '0' && !fit;
+
+function Preview() {
+  const Comp = W[name];
+  if (!Comp) return <div style={{ fontFamily: 'Inter', padding: 40 }}>Unknown screen: <b>{name}</b></div>;
+  const node = <Comp state={state}/>;
+  if (bezel) {
+    const Device = tablet ? W.TabletDevice : W.IOSDevice;
+    return <Device width={Wd} height={H}>{node}</Device>;
+  }
+  // Frameless: bottom bars are absolute, so anchor them to the screen height.
+  return (
+    <div className="fit-frame" style={{ width: Wd, ...(fit ? {} : { height: H }) }}>
+      <div style={{ position: 'relative', minHeight: H }}>{node}</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('stage')).render(<Preview/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+/* Design tokens — single source of truth.
+   Nothing in a component may hardcode a color, spacing, radius or shadow.
+   The palette below is a NEUTRAL placeholder: pick the brand hue here
+   (--c-accent + --c-accent-soft) and the whole system follows. */
+:root {
+  /* Surfaces & ink */
+  --c-canvas: #f7f7f8;   /* app background behind cards */
+  --c-paper:  #ffffff;   /* card / sheet surface */
+  --c-page:   #fdfdfd;   /* screen background */
+  --c-ink: #17171a;
+  --c-ink-soft: #5c5c63;   /* secondary text, labels, placeholders — AA on --c-page */
+  --c-ink-faint: #9a9aa1;  /* decorative only (icons, disabled) — fails AA for body copy */
+  --c-ink-line: rgba(23, 23, 26, 0.10);
+  --c-ink-line-strong: rgba(23, 23, 26, 0.16);
+
+  /* Accent — the one brand hue. Placeholder = ink, so an unset brand is obvious. */
+  --c-accent: #17171a;
+  --c-accent-soft: #eeeef0;
+
+  /* Semantic states */
+  --c-success: #2f7d55;
+  --c-success-soft: #dcebe2;
+  --c-warn: #a5701a;
+  --c-warn-soft: #f7ecd6;
+  --c-danger: #b3392f;
+  --c-danger-soft: #f6dedb;
+
+  /* Low-emphasis filled action */
+  --c-soft-bg: var(--c-ink-line);
+  --c-soft-fg: var(--c-ink);
+
+  --c-black: #000;
+  --c-white: #fff;
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* Type scale — 9 steps, nothing between them */
+  --t-caption: 12px;
+  --t-meta: 13px;
+  --t-body-sm: 14px;
+  --t-body: 15px;
+  --t-body-lg: 17px;
+  --t-sub: 20px;
+  --t-h: 26px;
+  --t-h-lg: 34px;
+  --t-display: 44px;
+
+  /* Spacing — 4px grid */
+  --s-4: 4px;
+  --s-8: 8px;
+  --s-12: 12px;
+  --s-16: 16px;
+  --s-20: 20px;
+  --s-24: 24px;
+  --s-32: 32px;
+  --s-40: 40px;
+  --s-48: 48px;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-pill: 900px;
+
+  /* Motion — one easing, one duration */
+  --ease-out: cubic-bezier(0.22, 0.7, 0.25, 1);
+  --dur-ui: 200ms;
+
+  /* Card style */
+  --card-bg: var(--c-paper);
+  --card-border: 1px solid var(--c-ink-line);
+  --card-shadow: 0 1px 2px rgba(23, 23, 26, 0.04), 0 8px 24px rgba(23, 23, 26, 0.05);
+
+  /* Scrims (image overlays for legibility) */
+  --c-scrim-soft:   rgba(23, 23, 26, 0.18);
+  --c-scrim-mid:    rgba(23, 23, 26, 0.40);
+  --c-scrim-strong: rgba(23, 23, 26, 0.88);
+
+  /* On-media — text on photos / dark scrims. Theme-independent, always light. */
+  --c-on-media:      #ffffff;
+  --c-on-media-soft: rgba(255, 255, 255, 0.78);
+
+  /* Translucent surfaces */
+  --c-glass-bg:        rgba(253, 253, 253, 0.72);
+  --c-glass-border:    rgba(255, 255, 255, 0.55);
+  --c-glass-highlight: rgba(255, 255, 255, 0.80);
+  --c-glass-thin:      rgba(255, 255, 255, 0.35);
+  --shadow-glass:      0 12px 36px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 var(--c-glass-highlight);
+  --shadow-sheet:      0 -8px 40px rgba(0, 0, 0, 0.14);
+
+  /* Component defaults */
+  --pad-card: 16px;
+  --gap-row: 12px;
+}
+
+/* Global keyframes */
+@keyframes app-spin { to { transform: rotate(360deg); } }
+@keyframes app-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes app-pulse { 0% { transform: scale(0.8); opacity: 0.55; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes app-fadeup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Motion is decoration: every animated surface still renders, it just stops moving. */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* Base */
+* { box-sizing: border-box; }
+.app-screen {
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  color: var(--c-ink);
+  background: var(--c-page);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
+}
+.app-screen,
+.app-screen * {
+  font-feature-settings: 'ss01', 'cv02', 'cv11';
+}
+
+/* Hide scrollbars inside screens for a clean device look */
+.app-screen ::-webkit-scrollbar { display: none; }
+.app-screen * { scrollbar-width: none; }
+
+/* Button interaction states */
+.app-screen button:not(:disabled):hover { filter: brightness(0.94); }
+.app-screen button:not(:disabled):active { transform: scale(0.98); filter: brightness(0.88); }
+.app-screen button:disabled { opacity: 0.38; cursor: not-allowed; }

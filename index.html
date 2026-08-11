@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Plugin · design canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #fafafa; font-family: 'Inter', system-ui, sans-serif; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@1.14.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="starters/ios-frame.jsx"></script>
+<script type="text/babel" src="starters/tablet-frame.jsx"></script>
+<script type="text/babel" src="starters/design-canvas.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const W = window;
+
+// The two device targets: iPad Pro 11" (M4) portrait on the counter,
+// iPhone 14/15-class phone in the manager's hand. Sizes are the SCREEN;
+// the frames add their own bezel, hence the artboard padding.
+const PHONE_W = 390, PHONE_H = 844;
+const TABLET_W = 834, TABLET_H = 1194;
+const PAD = 40;          // phone frame is flush — just breathing room
+const TABLET_PAD = 100;  // tablet bezel + rim (~30 per side) + breathing room
+
+function Phone({ children, height }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+      <W.IOSDevice width={PHONE_W} height={height || PHONE_H}>{children}</W.IOSDevice>
+    </div>
+  );
+}
+
+function Tablet({ children, width, height }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+      <W.TabletDevice width={width || TABLET_W} height={height || TABLET_H}>{children}</W.TabletDevice>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <W.DesignCanvas minScale={0.1} maxScale={3}>
+      <W.DCSection id="pos" title="POS · tablet"
+        subtitle="Live menu — name, price, category, availability. Tapping items builds an order with a running total.">
+        <W.DCArtboard id="pos-order" label="POS · menu & order" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder/></Tablet>
+        </W.DCArtboard>
+      </W.DCSection>
+
+      <W.DCSection id="manager" title="Manager · phone"
+        subtitle="Create, edit, delete menu items and flip them sold out. Every change lands on the POS in real time.">
+        <W.DCArtboard id="manager-menu" label="Manager · menu list" width={PHONE_W + PAD} height={PHONE_H + PAD}>
+          <Phone><W.ManagerMenu/></Phone>
+        </W.DCArtboard>
+      </W.DCSection>
+    </W.DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

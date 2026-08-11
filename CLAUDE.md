@@ -35,11 +35,14 @@ Bind every value on screen to a field that exists. If it isn't in the model,
 don't render it — add the field upstream or omit it.
 
 - **MenuItem** — `name`, `price`, `category`, `available` (bool). A category is
-  this string and nothing more: the list of categories is derived from the items
-  and sorted A–Z. There is no category record, no ordering field and no screen
-  for managing them — the brief has no such thing, and inventing one costs a
-  second collection, its rules, and a rename that has to write across every item
-  pointing at it.
+  one of a fixed four — Coffee, Tea, Pastry, Cold — held in shared code
+  (`CATEGORIES` in [screens.jsx](screens.jsx)) and ordered by service rather than
+  alphabetically: coffee first, because that is what the queue is here for. There
+  is no category record, no ordering field and no screen for managing them — the
+  brief has no such thing, and inventing one costs a second collection, its
+  rules, and a rename that has to write across every item pointing at it.
+  Deriving the list from the items instead would leave the very first item with
+  no category to pick.
 - **Order** — a list of lines (`MenuItem` + quantity + the unit price it is being
   sold at) and a running total derived from them. The total is computed, never
   stored. The unit is on the line so a ticket survives its item being deleted

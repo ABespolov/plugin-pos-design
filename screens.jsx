@@ -16,7 +16,8 @@ const {
 
 // Fixture data. A MenuItem is name · price · category · available and nothing
 // else — a flat list, because that is what a Firestore collection is. Prices are
-// numbers for the same reason they will be doubles in Flutter. Sized like a real
+// numbers here for arithmetic; in Flutter they are ints of minor units, never
+// doubles, and `Money` is the one place they become text. Sized like a real
 // café, not like a demo: a category holding six items makes any layout look
 // right; the question worth answering is what fifteen do.
 const MENU = [

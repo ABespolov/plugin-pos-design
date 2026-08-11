@@ -14,7 +14,7 @@ function Scaffold({ app, screen }) {
   return (
     <div className="app-screen" style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--s-24)',
-      background: 'var(--c-canvas)',
+      background: 'var(--c-paper)',
     }}>
       <Card style={{ textAlign: 'center', maxWidth: 420 }}>
         <SectionHead title={app}/>

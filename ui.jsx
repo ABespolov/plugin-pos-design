@@ -1,11 +1,15 @@
 // Shared UI atoms. Every screen builds from these — never style a raw
-// <button> or re-roll a card surface inline.
+// <button> or re-roll a surface inline.
+//
+// The system is INK SLAB ON WARM PAPER (see STYLE_GUIDE.md). Two rules do most
+// of the work here: hierarchy comes from hairlines and surface inversion, never
+// shadow; and cyan (`--c-live`) only ever appears on ink.
 
 const { useState, useEffect, useRef } = React;
 
 // ─── Icons — Lucide (https://lucide.dev) — ISC licensed ──────
 // Wraps window.lucide (loaded via CDN UMD). Each I.x is a pre-rendered React
-// element at its default size. For another size use ico('MapPin', 24).
+// element at its default size. For another size use ico('Plus', 24).
 function ico(name, size = 24, extra = {}) {
   const spec = (typeof window !== 'undefined' && window.lucide && window.lucide[name]);
   const children = Array.isArray(spec) ? spec : [];
@@ -20,45 +24,47 @@ function ico(name, size = 24, extra = {}) {
 // Add icons here as screens need them — one line each, PascalCase Lucide name.
 const I = {
   search:       ico('Search', 20),
-  plus:         ico('Plus', 16),
-  minus:        ico('Minus', 16),
-  close:        ico('X', 16),
-  check:        ico('Check', 16),
+  plus:         ico('Plus', 20),
+  minus:        ico('Minus', 20),
+  close:        ico('X', 20),
+  check:        ico('Check', 18),
   chevronLeft:  ico('ChevronLeft', 20),
-  chevronRight: ico('ChevronRight', 16),
-  chevronDown:  ico('ChevronDown', 16),
+  chevronRight: ico('ChevronRight', 18),
+  chevronDown:  ico('ChevronDown', 18),
   more:         ico('MoreHorizontal', 20),
-  settings:     ico('Settings', 20),
+  pencil:       ico('Pencil', 18),
   trash:        ico('Trash2', 18),
   alert:        ico('TriangleAlert', 18),
 };
 
-// ─── Pill button ─────────────────────────────────────────────
-function Btn({ children, kind = 'primary', size = 'md', icon, full, onClick, style = {}, disabled, className }) {
-  const heights = { sm: 32, md: 44, lg: 56 };
-  const px = { sm: 14, md: 22, lg: 28 };
-  const fs = { sm: 13, md: 15, lg: 16 };
-  const palettes = {
-    primary:   { bg: 'var(--c-accent)', fg: 'var(--c-paper)', bd: 'transparent' },
-    secondary: { bg: 'transparent', fg: 'var(--c-ink)', bd: 'var(--c-ink-line-strong)' },
+// ─── Button ──────────────────────────────────────────────────
+// `slab` is the primary: black fill, white label — the brand made black its
+// accent, so the strongest action on paper is ink. `live` is the only cyan
+// button and it may ONLY be placed on the ink slab.
+function Btn({ children, kind = 'slab', size = 'md', icon, full, onClick, style = {}, disabled, className }) {
+  const heights = { sm: 'var(--h-sm)', md: 'var(--h-md)', lg: 'var(--h-lg)' };
+  const px = { sm: 14, md: 20, lg: 26 };
+  const fs = { sm: 'var(--t-body-sm)', md: 'var(--t-body)', lg: 'var(--t-body-lg)' };
+  const kinds = {
+    slab:      { bg: 'var(--c-action)', fg: 'var(--c-on-action)', bd: 'transparent' },
+    outline:   { bg: 'transparent', fg: 'var(--c-ink)', bd: 'var(--c-line-strong)' },
+    quiet:     { bg: 'var(--c-surface-tint)', fg: 'var(--c-ink)', bd: 'transparent' },
     ghost:     { bg: 'transparent', fg: 'var(--c-ink-soft)', bd: 'transparent' },
-    soft:      { bg: 'var(--c-soft-bg)', fg: 'var(--c-soft-fg)', bd: 'transparent' },
-    canvas:    { bg: 'var(--c-canvas)', fg: 'var(--c-ink)', bd: 'transparent' },
-    good:      { bg: 'var(--c-success-soft)', fg: 'var(--c-success)', bd: 'transparent' },
-    danger:    { bg: 'var(--c-danger-soft)', fg: 'var(--c-danger)', bd: 'transparent' },
-    onaccent:  { bg: 'var(--c-paper)', fg: 'var(--c-accent)', bd: 'transparent' },
-    onmedia:   { bg: 'transparent', fg: 'var(--c-on-media)', bd: 'var(--c-glass-thin)' },
+    blocked:   { bg: 'var(--c-blocked-soft)', fg: 'var(--c-blocked)', bd: 'transparent' },
+    // on the slab
+    live:      { bg: 'var(--c-live)', fg: 'var(--c-on-live)', bd: 'transparent' },
+    onslab:    { bg: 'transparent', fg: 'var(--c-on-slab)', bd: 'var(--c-on-slab-line)' },
   };
-  const p = palettes[kind] || palettes.primary;
+  const p = kinds[kind] || kinds.slab;
   return (
     <button onClick={onClick} disabled={disabled} className={className} data-kind={kind} style={{
-      height: heights[size], padding: `0 ${px[size]}px`, borderRadius: 'var(--r-pill)',
+      height: heights[size], padding: `0 ${px[size]}px`, borderRadius: 'var(--r-md)',
       background: p.bg, color: p.fg, border: `1px solid ${p.bd}`,
-      fontFamily: 'inherit', fontSize: fs[size], fontWeight: 600, letterSpacing: 0.06,
+      fontFamily: 'inherit', fontSize: fs[size], fontWeight: 600, letterSpacing: 0,
       cursor: disabled ? 'not-allowed' : 'pointer',
       display: 'inline-flex', alignItems: 'center', gap: 'var(--s-8)', justifyContent: 'center',
       width: full ? '100%' : undefined, lineHeight: 1, whiteSpace: 'nowrap',
-      transition: 'filter 120ms ease, transform 80ms ease',
+      transition: 'background var(--dur-ui) var(--ease-out), transform 80ms var(--ease-out)',
       ...style,
     }}>
       {icon}{children}
@@ -66,114 +72,175 @@ function Btn({ children, kind = 'primary', size = 'md', icon, full, onClick, sty
   );
 }
 
-// ─── Card surface ────────────────────────────────────────────
-// Content only — never wrap an input in this (an input needs its own shell
-// with no shadow; a card-on-a-field is the classic drift bug).
-function Card({ children, style = {}, padded = true, onClick }) {
+// ─── Card ────────────────────────────────────────────────────
+// A white surface on paper, held by a hairline. No shadow, ever — depth in this
+// system is a border or an inverted surface. `live` lights the brand edge when a
+// real-time change has just landed on this card.
+function Card({ children, style = {}, padded = true, onClick, live }) {
   return (
     <div onClick={onClick} style={{
-      background: 'var(--card-bg)', border: 'var(--card-border)',
-      borderRadius: 'var(--r-xl)', boxShadow: 'var(--card-shadow)',
-      padding: padded ? 'var(--pad-card)' : 0, color: 'var(--c-ink)',
+      position: 'relative', overflow: 'hidden',
+      background: 'var(--c-surface)', border: '1px solid var(--c-line)',
+      borderRadius: 'var(--r-lg)', padding: padded ? 'var(--pad-card)' : 0,
+      color: 'var(--c-ink)',
+      ...style,
+    }}>
+      {live && <LiveEdge/>}
+      {children}
+    </div>
+  );
+}
+
+// ─── Slab ────────────────────────────────────────────────────
+// The near-black surface that carries the money: the running order, the total,
+// the moment of commitment. One per screen — a second slab and neither reads as
+// the important one. This is the only place cyan is allowed.
+function Slab({ children, style = {}, padded = true, radius = 'var(--r-xl)' }) {
+  return (
+    <div style={{
+      background: 'var(--c-slab)', color: 'var(--c-on-slab)',
+      borderRadius: radius, padding: padded ? 'var(--s-20)' : 0,
       ...style,
     }}>{children}</div>
   );
 }
 
-// ─── Selectable chip ─────────────────────────────────────────
-// `fill` stretches it to an equal share of its row; `sm` is the dense variant.
-// Font weight is constant across states so a row never reflows on selection.
-function Chip({ children, on, onClick, icon, fill, sm }) {
+// ─── Live edge ───────────────────────────────────────────────
+// The product's promise is that a change made in Manager shows up here, now.
+// That has to be visible: the edge lights cyan and fades. Nothing else in the
+// system uses this color, so it can only ever mean "this just changed".
+function LiveEdge({ side = 'left' }) {
+  const horizontal = side === 'top' || side === 'bottom';
+  return (
+    <span aria-hidden style={{
+      position: 'absolute', background: 'var(--c-live-edge)',
+      [side]: 0,
+      ...(horizontal ? { left: 0, right: 0, height: 3 } : { top: 0, bottom: 0, width: 3 }),
+      animation: 'app-live-edge var(--dur-live) var(--ease-out) forwards',
+    }}/>
+  );
+}
+
+// ─── Chip — selectable filter (category tabs, sections) ──────
+function Chip({ children, on, onClick, icon, sm }) {
   return (
     <button onClick={onClick} style={{
-      height: sm ? 30 : 38, padding: sm ? '0 var(--s-8)' : '0 var(--s-12)', borderRadius: 'var(--r-pill)',
-      background: on ? 'var(--c-accent-soft)' : 'transparent',
-      color: on ? 'var(--c-accent)' : 'var(--c-ink)',
-      border: `1px solid ${on ? 'var(--c-accent)' : 'var(--c-ink-line-strong)'}`,
-      fontFamily: 'inherit', fontSize: sm ? 'var(--t-meta)' : 'var(--t-body-sm)', fontWeight: 600, letterSpacing: 0.02,
-      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--s-4)',
-      whiteSpace: 'nowrap',
-      ...(fill ? { flex: 1, minWidth: 0 } : { flexShrink: 0, alignSelf: 'flex-start', width: 'fit-content' }),
+      height: sm ? 32 : 'var(--h-sm)', padding: '0 var(--s-16)', borderRadius: 'var(--r-pill)',
+      background: on ? 'var(--c-ink)' : 'var(--c-surface-tint)',
+      color: on ? 'var(--c-on-action)' : 'var(--c-ink)',
+      border: 'none',
+      fontFamily: 'inherit', fontSize: 'var(--t-body-sm)', fontWeight: 600,
+      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      gap: 'var(--s-4)', whiteSpace: 'nowrap', flexShrink: 0,
+      transition: 'background var(--dur-ui) var(--ease-out)',
     }}>{icon}{children}</button>
   );
 }
 
 // ─── Tag — non-interactive label ─────────────────────────────
-function Tag({ children, tone = 'ink', icon }) {
+// `blocked` is the loud one, and deliberately the only hue that appears on
+// paper: a cashier must catch "sold out" without reading it.
+function Tag({ children, tone = 'quiet', icon }) {
   const tones = {
-    ink:    { bg: 'var(--c-ink-line)', fg: 'var(--c-ink)' },
-    canvas: { bg: 'var(--c-canvas)', fg: 'var(--c-ink)' },
-    accent: { bg: 'var(--c-accent)', fg: 'var(--c-paper)' },
-    good:   { bg: 'var(--c-success-soft)', fg: 'var(--c-success)' },
-    warn:   { bg: 'var(--c-warn-soft)', fg: 'var(--c-warn)' },
-    danger: { bg: 'var(--c-danger-soft)', fg: 'var(--c-danger)' },
+    quiet:   { bg: 'var(--c-surface-tint)', fg: 'var(--c-ink-soft)', bd: 'transparent' },
+    outline: { bg: 'transparent', fg: 'var(--c-ink-soft)', bd: 'var(--c-line)' },
+    ink:     { bg: 'var(--c-ink)', fg: 'var(--c-on-action)', bd: 'transparent' },
+    blocked: { bg: 'var(--c-blocked-soft)', fg: 'var(--c-blocked)', bd: 'transparent' },
+    live:    { bg: 'var(--c-live)', fg: 'var(--c-on-live)', bd: 'transparent' }, // slab only
   };
-  const p = tones[tone] || tones.ink;
+  const p = tones[tone] || tones.quiet;
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 'var(--s-4)',
-      padding: 'var(--s-4) var(--s-8)', borderRadius: 'var(--r-pill)',
-      background: p.bg, color: p.fg,
-      fontSize: 'var(--t-caption)', fontWeight: 600, letterSpacing: 0.02, lineHeight: 1.3,
+      padding: '3px var(--s-8)', borderRadius: 'var(--r-pill)',
+      background: p.bg, color: p.fg, border: `1px solid ${p.bd}`,
+      fontSize: 'var(--t-caption)', fontWeight: 700, lineHeight: 1.4,
     }}>{icon}{children}</span>
   );
 }
 
-// ─── Image placeholder ───────────────────────────────────────
-// Deterministic per `id`, so a screen keeps the same picture between reloads.
-function Slot({ label, h = 140, style = {}, id }) {
-  const seed = encodeURIComponent(id || label || 'slot');
+// ─── Micro label ─────────────────────────────────────────────
+// The brand's signature typographic move: tiny uppercase set on .18em tracking.
+// Names a region (CATEGORY, ORDER, SOLD OUT) without competing with content.
+function Label({ children, tone = 'soft', style = {} }) {
+  const colors = { soft: 'var(--c-ink-soft)', ink: 'var(--c-ink)', onslab: 'var(--c-on-slab-soft)' };
   return (
     <div style={{
-      height: h, borderRadius: 'var(--r-lg)', overflow: 'hidden',
-      background: 'var(--c-canvas)', position: 'relative',
+      fontSize: 'var(--t-caption)', fontWeight: 700, textTransform: 'uppercase',
+      letterSpacing: 'var(--track-label)', color: colors[tone] || colors.soft,
       ...style,
-    }}>
-      <img
-        src={`https://picsum.photos/seed/${seed}/800/400`}
-        alt={label || ''}
-        loading="lazy"
-        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
-      />
-    </div>
+    }}>{children}</div>
   );
 }
 
-// ─── iOS-style toggle ────────────────────────────────────────
-// Controlled. stopPropagation so it works inside a tappable row without double-firing.
-function Toggle({ on = false, onChange, label }) {
+// ─── Money ───────────────────────────────────────────────────
+// Prices are a column, not a sentence: tabular figures, and the large sizes use
+// the brand's second face, whose condensed digits hold a big total together.
+function Money({ value, size = 'body', style = {} }) {
+  const big = size === 'display' || size === 'h-lg' || size === 'h';
+  return (
+    <span style={{
+      fontFamily: big ? 'var(--font-numeric)' : 'inherit',
+      fontSize: `var(--t-${size})`,
+      fontWeight: big ? 600 : 500,
+      letterSpacing: big ? 'var(--track-tight)' : 0,
+      fontVariantNumeric: 'tabular-nums',
+      ...style,
+    }}>{value}</span>
+  );
+}
+
+// ─── Heading ─────────────────────────────────────────────────
+function Heading({ children, size = 'h', style = {} }) {
+  return (
+    <div style={{
+      fontSize: `var(--t-${size})`, fontWeight: 700,
+      letterSpacing: 'var(--track-tight)', lineHeight: 1.15,
+      ...style,
+    }}>{children}</div>
+  );
+}
+
+// ─── Toggle ──────────────────────────────────────────────────
+// The manager's sold-out switch. Off is not "grey neutral" — it is blocked, so
+// the off track carries the blocked hue and the state is readable at a glance.
+function Toggle({ on = false, onChange, label, blockedWhenOff }) {
+  const offBg = blockedWhenOff ? 'var(--c-blocked)' : 'var(--c-line-strong)';
   return (
     <button
       type="button" role="switch" aria-checked={on} aria-label={label}
       onClick={(e) => { e.stopPropagation(); onChange && onChange(); }}
       style={{
-        width: 48, height: 28, borderRadius: 'var(--r-pill)', border: 'none', flexShrink: 0,
-        background: on ? 'var(--c-accent)' : 'var(--c-ink-line-strong)',
-        padding: 2, cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
+        width: 52, height: 32, borderRadius: 'var(--r-pill)', border: 'none', flexShrink: 0,
+        background: on ? 'var(--c-ink)' : offBg,
+        padding: 3, cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
         justifyContent: on ? 'flex-end' : 'flex-start',
-        transition: 'background 160ms var(--ease-out)',
+        transition: 'background var(--dur-ui) var(--ease-out)',
       }}>
-      <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--c-paper)', boxShadow: 'var(--card-shadow)' }}/>
+      <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--c-surface)' }}/>
     </button>
   );
 }
 
-// ─── Status-bar spacer (sits inside a screen, under the device notch) ──
-function StatusFiller() {
-  return <div style={{ height: 54 }}/>;
+// ─── Divider ─────────────────────────────────────────────────
+function Rule({ onSlab, style = {} }) {
+  return <div style={{ height: 1, background: onSlab ? 'var(--c-on-slab-line)' : 'var(--c-line)', ...style }}/>;
 }
 
 // ─── Section header ─────────────────────────────────────────
 function SectionHead({ title, action, sub }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 'var(--s-8)' }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 'var(--s-12)' }}>
       <div>
-        <div style={{ fontSize: 'var(--t-caption)', fontWeight: 600, color: 'var(--c-ink-soft)', textTransform: 'uppercase', letterSpacing: 0.12 }}>{title}</div>
-        {sub && <div style={{ fontSize: 'var(--t-meta)', color: 'var(--c-ink-soft)', marginTop: 2 }}>{sub}</div>}
+        <Label>{title}</Label>
+        {sub && <div style={{ fontSize: 'var(--t-body-sm)', color: 'var(--c-ink-soft)', marginTop: 4 }}>{sub}</div>}
       </div>
-      {action && <span style={{ fontSize: 'var(--t-meta)', fontWeight: 600, color: 'var(--c-ink-soft)' }}>{action}</span>}
+      {action && <span style={{ fontSize: 'var(--t-body-sm)', fontWeight: 600, color: 'var(--c-ink-soft)' }}>{action}</span>}
     </div>
   );
 }
 
-Object.assign(window, { Btn, Card, Chip, Tag, Slot, Toggle, StatusFiller, SectionHead, Icon: I, ico });
+Object.assign(window, {
+  Btn, Card, Slab, LiveEdge, Chip, Tag, Label, Money, Heading, Toggle, Rule, SectionHead,
+  Icon: I, ico,
+});

@@ -77,7 +77,7 @@ function TabletDevice({
 
         <div style={{
           width, height, borderRadius: 18, overflow: 'hidden', position: 'relative',
-          background: dark ? '#000' : 'var(--c-page)',
+          background: dark ? '#000' : 'var(--c-paper)',
         }}>
           {children}
           {statusBar && <IPadStatusBar dark={dark} time={time} battery={battery}/>}

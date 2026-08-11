@@ -1,53 +1,75 @@
 /* Design tokens — single source of truth.
-   Nothing in a component may hardcode a color, spacing, radius or shadow.
-   The palette below is a NEUTRAL placeholder: pick the brand hue here
-   (--c-accent + --c-accent-soft) and the whole system follows. */
+   Nothing in a component may hardcode a color, size, radius or spacing.
+
+   Grounded in Plug-in Promotions' own brand tokens (pluginpromotions.com):
+   background #f7f7f5, foreground/accent #0a0a0a, surface #fff, tinted #f0efed,
+   dark surface #0a0a0a, muted #6b6b6b, border #e2e2e0, DM Sans + Instrument
+   Sans — plus the electric cyan #1de6f1 of the logo mark.
+
+   Concept: INK SLAB ON WARM PAPER. Warm paper canvas, ink type, white cards on
+   hairlines, and one near-black slab that carries the money (the order panel,
+   the total, the primary action). Cyan is the live signal and lives ONLY on
+   ink — it fails contrast on paper, and the brand's own CTA is black. */
 :root {
-  /* Surfaces & ink */
-  --c-canvas: #f7f7f8;   /* app background behind cards */
-  --c-paper:  #ffffff;   /* card / sheet surface */
-  --c-page:   #fdfdfd;   /* screen background */
-  --c-ink: #17171a;
-  --c-ink-soft: #5c5c63;   /* secondary text, labels, placeholders — AA on --c-page */
-  --c-ink-faint: #9a9aa1;  /* decorative only (icons, disabled) — fails AA for body copy */
-  --c-ink-line: rgba(23, 23, 26, 0.10);
-  --c-ink-line-strong: rgba(23, 23, 26, 0.16);
+  /* ── Surfaces ─────────────────────────────────────────────── */
+  --c-paper:        #f7f7f5;  /* app canvas */
+  --c-surface:      #ffffff;  /* cards, sheets, rows */
+  --c-surface-tint: #f0efed;  /* quiet fill: unselected chips, inset wells */
+  --c-slab:         #0a0a0a;  /* the ink slab: order panel, primary action */
 
-  /* Accent — the one brand hue. Placeholder = ink, so an unset brand is obvious. */
-  --c-accent: #17171a;
-  --c-accent-soft: #eeeef0;
+  /* ── Ink ──────────────────────────────────────────────────── */
+  --c-ink:         #0a0a0a;
+  --c-ink-soft:    #6b6b6b;   /* secondary text — 5.0:1 on paper, AA */
+  --c-ink-faint:   #a2a29e;   /* decorative only: icons, disabled, rules */
+  --c-line:        #e2e2e0;   /* hairlines, dividers, card borders */
+  --c-line-strong: #cfcfcb;   /* outline buttons, input borders */
 
-  /* Semantic states */
-  --c-success: #2f7d55;
-  --c-success-soft: #dcebe2;
-  --c-warn: #a5701a;
-  --c-warn-soft: #f7ecd6;
-  --c-danger: #b3392f;
-  --c-danger-soft: #f6dedb;
+  /* ── On the slab (text/marks on near-black — never re-themed) ─ */
+  --c-on-slab:      #ffffff;
+  --c-on-slab-soft: rgba(255, 255, 255, 0.64);
+  --c-on-slab-line: rgba(255, 255, 255, 0.14);
 
-  /* Low-emphasis filled action */
-  --c-soft-bg: var(--c-ink-line);
-  --c-soft-fg: var(--c-ink);
+  /* ── Action — black, because the brand made black its accent ── */
+  --c-action:       #0a0a0a;
+  --c-action-press: #333333;
+  --c-on-action:    #ffffff;
 
-  --c-black: #000;
-  --c-white: #fff;
+  /* ── Live — the logo cyan. ON INK ONLY. ───────────────────────
+     12.9:1 on the slab, 1.4:1 on paper. It marks what is changing
+     right now (a menu update landing, an item just added). It is
+     never a CTA, never a fill on paper, never body text. */
+  --c-live:      #1de6f1;
+  --c-live-edge: #1de6f1;   /* the 3px edge that fades after a live change */
+  --c-on-live:   #0a0a0a;   /* ink on a cyan fill, on the slab */
 
-  /* Typography */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  /* ── Blocked — sold out, destructive, error. The only hue on paper. ── */
+  --c-blocked:      #c22b10;  /* 5.4:1 on paper, AA */
+  --c-blocked-soft: #f4e4e0;
 
-  /* Type scale — 9 steps, nothing between them */
+  --c-focus: #0a0a0a;
+
+  /* ── Type ─────────────────────────────────────────────────────
+     DM Sans is the brand's default family and carries all UI.
+     Instrument Sans is the brand's second face, used ONLY for large
+     numerals (the running total) where condensed digits read better. */
+  --font-sans:    'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-numeric: 'Instrument Sans', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+
   --t-caption: 12px;
-  --t-meta: 13px;
+  --t-meta:    13px;
   --t-body-sm: 14px;
-  --t-body: 15px;
-  --t-body-lg: 17px;
-  --t-sub: 20px;
-  --t-h: 26px;
-  --t-h-lg: 34px;
-  --t-display: 44px;
+  --t-body:    16px;   /* 16, not 15 — the POS is read at arm's length */
+  --t-body-lg: 18px;
+  --t-sub:     22px;
+  --t-h:       28px;
+  --t-h-lg:    36px;
+  --t-display: 56px;
 
-  /* Spacing — 4px grid */
+  /* Tracking — both values are the brand's own */
+  --track-tight: -0.02em;  /* headings and display */
+  --track-label: 0.18em;   /* uppercase micro-labels */
+
+  /* ── Spacing — 4px grid ───────────────────────────────────── */
   --s-4: 4px;
   --s-8: 8px;
   --s-12: 12px;
@@ -58,51 +80,46 @@
   --s-40: 40px;
   --s-48: 48px;
 
-  /* Radii */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 20px;
-  --r-pill: 900px;
+  /* ── Radii — from the brand's own scale (6 / 8 / 12) ──────── */
+  --r-sm:   6px;
+  --r-md:  10px;   /* buttons and inputs — a grid of pills reads as a toy */
+  --r-lg:  14px;   /* cards */
+  --r-xl:  20px;   /* sheets, the slab */
+  --r-pill: 999px; /* chips, tags, indicators only */
 
-  /* Motion — one easing, one duration */
+  /* ── Control heights — tablet-first ───────────────────────── */
+  --h-sm: 36px;
+  --h-md: 48px;
+  --h-lg: 60px;
+
+  /* ── Elevation: there isn't any ───────────────────────────────
+     Hierarchy comes from hairlines and from inverting the surface.
+     The single exception is a sheet floating over the screen. */
+  --shadow-sheet: 0 -8px 40px rgba(10, 10, 10, 0.16);
+
+  /* ── Motion ───────────────────────────────────────────────── */
   --ease-out: cubic-bezier(0.22, 0.7, 0.25, 1);
-  --dur-ui: 200ms;
+  --dur-ui: 180ms;
+  --dur-live: 2000ms;  /* how long a live edge stays lit before fading */
 
-  /* Card style */
-  --card-bg: var(--c-paper);
-  --card-border: 1px solid var(--c-ink-line);
-  --card-shadow: 0 1px 2px rgba(23, 23, 26, 0.04), 0 8px 24px rgba(23, 23, 26, 0.05);
-
-  /* Scrims (image overlays for legibility) */
-  --c-scrim-soft:   rgba(23, 23, 26, 0.18);
-  --c-scrim-mid:    rgba(23, 23, 26, 0.40);
-  --c-scrim-strong: rgba(23, 23, 26, 0.88);
-
-  /* On-media — text on photos / dark scrims. Theme-independent, always light. */
-  --c-on-media:      #ffffff;
-  --c-on-media-soft: rgba(255, 255, 255, 0.78);
-
-  /* Translucent surfaces */
-  --c-glass-bg:        rgba(253, 253, 253, 0.72);
-  --c-glass-border:    rgba(255, 255, 255, 0.55);
-  --c-glass-highlight: rgba(255, 255, 255, 0.80);
-  --c-glass-thin:      rgba(255, 255, 255, 0.35);
-  --shadow-glass:      0 12px 36px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 var(--c-glass-highlight);
-  --shadow-sheet:      0 -8px 40px rgba(0, 0, 0, 0.14);
-
-  /* Component defaults */
+  /* ── Component defaults ───────────────────────────────────── */
   --pad-card: 16px;
   --gap-row: 12px;
 }
 
 /* Global keyframes */
 @keyframes app-spin { to { transform: rotate(360deg); } }
-@keyframes app-blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-@keyframes app-pulse { 0% { transform: scale(0.8); opacity: 0.55; } 100% { transform: scale(1.9); opacity: 0; } }
 @keyframes app-fadeup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* The live edge: a change from the manager lands, the edge lights, then goes.
+   Full opacity is held for most of the duration so a cashier mid-pour still
+   catches it; only the tail fades. */
+@keyframes app-live-edge {
+  0%, 70% { opacity: 1; }
+  100%    { opacity: 0; }
+}
 
-/* Motion is decoration: every animated surface still renders, it just stops moving. */
+/* Motion is decoration: every animated surface still renders, it just stops
+   moving. A live edge that cannot animate stays lit rather than vanishing. */
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
@@ -113,23 +130,22 @@
   font-family: var(--font-sans);
   font-size: var(--t-body);
   color: var(--c-ink);
-  background: var(--c-page);
+  background: var(--c-paper);
   width: 100%;
   height: 100%;
   position: relative;
-  letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
 }
-.app-screen,
-.app-screen * {
-  font-feature-settings: 'ss01', 'cv02', 'cv11';
-}
+
+/* Money and quantities are columns of digits: they must align. Everything
+   numeric gets tabular figures, everywhere, without asking. */
+.app-screen { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
 
 /* Hide scrollbars inside screens for a clean device look */
 .app-screen ::-webkit-scrollbar { display: none; }
 .app-screen * { scrollbar-width: none; }
 
-/* Button interaction states */
-.app-screen button:not(:disabled):hover { filter: brightness(0.94); }
-.app-screen button:not(:disabled):active { transform: scale(0.98); filter: brightness(0.88); }
+/* Interaction states */
+.app-screen button:not(:disabled):active { transform: scale(0.985); }
 .app-screen button:disabled { opacity: 0.38; cursor: not-allowed; }
+.app-screen :focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }

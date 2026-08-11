@@ -5,8 +5,9 @@ Single page, React + Babel-standalone via CDN, **no build step**. It feeds a
 Flutter implementation in the sibling repo `plugin` — every design choice must be
 portable to Flutter.
 
-**Status:** scaffold only. Tokens, atoms, device frames and the canvas are wired;
-the visual direction is not decided and no screen is designed yet.
+**Status:** the design system is set — brand-grounded tokens, atoms, device frames
+and the canvas are wired. **No screen is designed yet**; `screens.jsx` holds two
+placeholders.
 
 ## What we're designing
 
@@ -63,14 +64,33 @@ cache the Babel files, which makes edits look like they "didn't apply".
 be expressed by an existing token or component contract, the system needs a new
 token — never a one-off inline override.
 
+**North star — ink slab on warm paper.** Warm off-white canvas, ink type, white
+cards on hairlines, and **one near-black slab per screen** that carries the money
+(the running total, the primary action). Depth is a border or an inverted
+surface — there are **no shadows**. The brand's electric cyan means exactly one
+thing, *this just changed right now*, and lives **only on ink** (on paper it is
+1.4:1). It is never a CTA: the brand made black its action color. Sold-out red is
+the only hue on paper; available is the default state and carries no color.
+
 The short version: only `--c-*` colors (no raw hex/rgba in component code), the
-4-px spacing grid, the 9-step type scale, `--r-*` radii, one `var(--card-shadow)`
-per surface, 44×44 touch targets, `--c-ink-soft` (never `--c-ink-faint`) for
-readable secondary copy.
+4-px spacing grid, the 9-step type scale, DM Sans (Instrument Sans for large
+numerals only), `--r-md` on buttons and pill for chips/tags only, 48-px controls,
+`--c-ink-soft` (never `--c-ink-faint`) for readable secondary copy.
 
 There are **no theming knobs** — one light token set, no `data-palette` /
 `data-density` / `data-radius` / dark-mode variants. If dark mode becomes a
 product requirement, it gets designed then, not kept warm as dead CSS.
+
+## Before designing any screen or flow: run `/new-screen`
+
+**Mandatory.** Any new screen, screen state, sheet, confirm, or multi-step flow
+starts by invoking the project skill `new-screen`. It runs Refero research
+(screens → flows → styles only if needed), forces a reference lock and a decision
+ledger, and checks the result against this system. The visual language is already
+settled; what that skill settles is *what goes on the screen and in what order*,
+grounded in real products rather than in a plausible-looking guess.
+
+Token edits, copy fixes and bug fixes don't need it.
 
 ## File map
 
@@ -78,9 +98,10 @@ product requirement, it gets designed then, not kept warm as dead CSS.
 |---|---|
 | [index.html](index.html) | Entry point — the design canvas (sections + artboards), and the `Phone` / `Tablet` wrappers |
 | [_live.html](_live.html) | Single-screen preview harness: `_live.html?s=Name` (`&d=tablet`, `&state=…`, `&fit=1`, `&frame=0`, `&w=`, `&h=`). No canvas, so it stays light enough to screenshot |
-| [tokens.css](tokens.css) | **Single source of truth** for colors, type, spacing, radii, shadows |
-| [STYLE_GUIDE.md](STYLE_GUIDE.md) | Human-readable do / don't with rationale |
-| [ui.jsx](ui.jsx) | Shared atoms — `Btn`, `Card`, `Chip`, `Tag`, `Slot`, `Toggle`, `SectionHead`, `StatusFiller`, icon set `I` / `ico` |
+| [tokens.css](tokens.css) | **Single source of truth** for colors, type, spacing, radii, motion |
+| [STYLE_GUIDE.md](STYLE_GUIDE.md) | The direction, the reference lock, the decision ledger, and the do / don't |
+| [ui.jsx](ui.jsx) | Shared atoms — `Btn`, `Card`, `Slab`, `LiveEdge`, `Chip`, `Tag`, `Label`, `Money`, `Heading`, `Toggle`, `Rule`, `SectionHead`, icon set `I` / `ico` |
+| [.claude/skills/new-screen/SKILL.md](.claude/skills/new-screen/SKILL.md) | The mandatory pre-screen research gate |
 | [screens.jsx](screens.jsx) | Product screens. One function per screen, exported on `window` |
 | [starters/ios-frame.jsx](starters/ios-frame.jsx) | iPhone frame (390×844) — Manager |
 | [starters/tablet-frame.jsx](starters/tablet-frame.jsx) | iPad Pro 11" (M4) frame — POS. `width`/`height` are the screen (834×1194 portrait); the body adds its own bezel |

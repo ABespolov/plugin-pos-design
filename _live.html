@@ -6,10 +6,10 @@
 <title>Live preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css"/>
 <style>
-  html, body { margin: 0; padding: 0; background: #eceae6; font-family: 'Inter', system-ui, sans-serif; }
+  html, body { margin: 0; padding: 0; background: #eceae6; font-family: 'DM Sans', system-ui, sans-serif; }
   /* Single-screen harness — NO design canvas, so it stays light enough to
      screenshot reliably (the full canvas is heavy and times out).
        ?s=Name        which screen (required in practice)
@@ -19,7 +19,7 @@
        ?fit=1         natural height, no clipping (always frameless)
        ?w= / ?h=      override screen size */
   #stage { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 24px; box-sizing: border-box; }
-  .fit-frame { background: var(--c-page); border-radius: 24px; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.14); position: relative; }
+  .fit-frame { background: var(--c-paper); border-radius: 24px; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.14); position: relative; }
 </style>
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
@@ -48,7 +48,7 @@ const bezel = P.get('frame') !== '0' && !fit;
 
 function Preview() {
   const Comp = W[name];
-  if (!Comp) return <div style={{ fontFamily: 'Inter', padding: 40 }}>Unknown screen: <b>{name}</b></div>;
+  if (!Comp) return <div style={{ fontFamily: 'DM Sans', padding: 40 }}>Unknown screen: <b>{name}</b></div>;
   const node = <Comp state={state}/>;
   if (bezel) {
     const Device = tablet ? W.TabletDevice : W.IOSDevice;

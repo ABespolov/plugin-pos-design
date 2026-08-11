@@ -139,7 +139,12 @@ function LiveEdge({ side = 'left', hold }) {
 // ─── Chip — selectable filter (category tabs, sections) ──────
 // `lg` is the POS size: a chip that switches the whole menu is hit as often as
 // the items themselves, so it gets the same 48 as every other counter control.
-function Chip({ children, on, onClick, icon, size = 'md' }) {
+//
+// `dot` marks a category the cashier is not looking at, in which something just
+// changed. It is the only live mark this system puts on paper as a shape rather
+// than an edge, and it needs the ink ring to exist at all: cyan on the chip's
+// tint is 1.4:1 — the hue carries the meaning, the ring carries the contrast.
+function Chip({ children, on, onClick, icon, size = 'md', dot }) {
   const heights = { sm: 32, md: 'var(--h-sm)', lg: 'var(--h-md)' };
   return (
     <button onClick={onClick} style={{
@@ -151,7 +156,24 @@ function Chip({ children, on, onClick, icon, size = 'md' }) {
       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       gap: 'var(--s-4)', whiteSpace: 'nowrap', flexShrink: 0,
       transition: 'background var(--dur-ui) var(--ease-out)',
-    }}>{icon}{children}</button>
+    }}>
+      {icon}{children}
+      {dot && <LiveDot ring={!on} style={{ marginLeft: 'var(--s-4)' }}/>}
+    </button>
+  );
+}
+
+// ─── Live dot — "something in here changed" ──────────────────
+// The edge's small sibling, for when the thing that changed is not on screen and
+// only its container can carry the news. Same colour, same one meaning.
+function LiveDot({ ring, style = {} }) {
+  return (
+    <span aria-hidden style={{
+      width: 8, height: 8, borderRadius: 'var(--r-pill)', flexShrink: 0,
+      background: 'var(--c-live)',
+      border: ring ? '1px solid var(--c-ink)' : 'none',
+      ...style,
+    }}/>
   );
 }
 
@@ -193,13 +215,15 @@ function Label({ children, tone = 'soft', style = {} }) {
 }
 
 // ─── Money ───────────────────────────────────────────────────
-// Prices are a column, not a sentence: tabular figures, and the large sizes use
-// the brand's second face, whose condensed digits hold a big total together.
+// Prices are a column, not a sentence, so every one of them is set in the
+// brand's second face at every size — it is the only one of the two with
+// `tnum`. DM Sans has proportional digits and no way to switch them off, so a
+// price left in the UI face jitters down the ticket.
 function Money({ value, size = 'body', style = {} }) {
   const big = size === 'display' || size === 'h-lg' || size === 'h';
   return (
     <span style={{
-      fontFamily: big ? 'var(--font-numeric)' : 'inherit',
+      fontFamily: 'var(--font-numeric)',
       fontSize: `var(--t-${size})`,
       fontWeight: big ? 600 : 500,
       letterSpacing: big ? 'var(--track-tight)' : 0,
@@ -297,6 +321,13 @@ function Stepper({ value, onDec, onInc, onSlab, label = 'quantity' }) {
 // the quiet fill, softens the ink and states itself in the one hue paper gets —
 // the cashier catches it before reading it. `live` lights the cyan edge when the
 // change landed from Manager just now.
+//
+// Sold out takes the PRICE's place rather than adding a line under the name, and
+// that is what keeps the tile one fixed height. A tag on a new line grows the
+// tile, a taller tile grows its whole grid row, and every target below it moves
+// — from a change the cashier did not make and cannot predict. It also reads
+// better: the right-hand column is the one the eye already runs down, and the
+// price of something nobody can sell is not the news.
 function MenuTile({ name, price, available = true, live, onClick }) {
   return (
     <button
@@ -306,10 +337,10 @@ function MenuTile({ name, price, available = true, live, onClick }) {
         position: 'relative', overflow: 'hidden',
         // One row of content, vertically centred — a tile tall enough to pin the
         // name to the top and the price to the bottom leaves a hole in the middle
-        // that reads as missing content. 84 fits the sold-out tag's second line
-        // and still lands four categories on screen without a scroll.
+        // that reads as missing content. 84 holds a two-line name, and it is a
+        // fixed height in every state so no live change can move the grid.
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        gap: 'var(--s-8)', minHeight: 84, padding: 'var(--pad-card)',
+        height: 84, padding: 'var(--pad-card)',
         background: available ? 'var(--c-surface)' : 'var(--c-surface-tint)',
         border: '1px solid var(--c-line)', borderRadius: 'var(--r-lg)',
         // a <button> does not inherit color — say it here so the whole tile,
@@ -323,15 +354,16 @@ function MenuTile({ name, price, available = true, live, onClick }) {
       {live && <LiveEdge hold={live === 'hold'}/>}
       {/* name left, money right — the price column runs down the whole screen and
           terminates in the total on the slab */}
-      <span style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--s-12)' }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-12)' }}>
         <span style={{
           flex: 1, minWidth: 0,
           fontSize: 'var(--t-body-lg)', fontWeight: 600, lineHeight: 1.25, textWrap: 'balance',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{name}</span>
-        <Money value={price} size="body-sm" style={{ color: 'var(--c-ink-soft)' }}/>
+        {available
+          ? <Money value={price} size="body-sm" style={{ color: 'var(--c-ink-soft)' }}/>
+          : <Tag tone="blocked">Sold out</Tag>}
       </span>
-      {!available && <span style={{ alignSelf: 'flex-start' }}><Tag tone="blocked">Sold out</Tag></span>}
     </button>
   );
 }
@@ -356,20 +388,29 @@ function MenuGrid({ children }) {
 //
 // `prefix` sits inside the border and is not part of the value — a price field
 // shows the currency without the manager having to type it.
-function Field({ label, value, placeholder, prefix, inputMode, id, onChange }) {
+//
+// `error` is a sentence, not a flag: the border goes blocked and the sentence
+// says what to do about it. It appears only after the manager has tried to save
+// — marking a field red while it is still being typed into is scolding someone
+// mid-sentence — and clears the moment the field is edited again.
+function Field({ label, value, placeholder, prefix, inputMode, id, onChange, error, inputRef }) {
+  const errorId = error ? `${id}-error` : undefined;
   return (
     <label htmlFor={id} style={{ display: 'block', cursor: 'text' }}>
       <Label style={{ marginBottom: 'var(--s-8)' }}>{label}</Label>
       <span style={{
         display: 'flex', alignItems: 'center', gap: 'var(--s-4)',
         height: 'var(--h-md)', padding: '0 var(--pad-card)',
-        background: 'var(--c-surface)', border: '1px solid var(--c-line-strong)',
+        background: 'var(--c-surface)',
+        border: `1px solid ${error ? 'var(--c-blocked)' : 'var(--c-line-strong)'}`,
         borderRadius: 'var(--r-md)',
+        transition: 'border-color var(--dur-ui) var(--ease-out)',
       }}>
         {prefix && <span style={{ color: 'var(--c-ink-soft)', fontSize: 'var(--t-body)' }}>{prefix}</span>}
         <input
-          id={id} value={value} placeholder={placeholder} onChange={onChange}
+          id={id} ref={inputRef} value={value} placeholder={placeholder} onChange={onChange}
           inputMode={inputMode} autoComplete="off" spellCheck={false}
+          aria-invalid={error ? 'true' : undefined} aria-describedby={errorId}
           style={{
             flex: 1, minWidth: 0, height: '100%',
             border: 'none', outline: 'none', background: 'transparent',
@@ -377,14 +418,46 @@ function Field({ label, value, placeholder, prefix, inputMode, id, onChange }) {
             fontVariantNumeric: 'tabular-nums',
           }}/>
       </span>
+      {error && (
+        <span id={errorId} role="alert" style={{
+          display: 'block', marginTop: 'var(--s-8)',
+          fontSize: 'var(--t-body-sm)', color: 'var(--c-blocked)',
+        }}>{error}</span>
+      )}
     </label>
   );
 }
 
-// ─── Sheet — a decision that blocks the screen behind it ─────
+// ─── Menu tile, before the first snapshot lands ──────────────
+// The grid a POS opens into, drawn at the size the real tiles will be so the
+// menu does not jump when the data arrives. Two bars, not a spinner: a spinner
+// says "wait", a skeleton says "this is a menu, and here is where it will be".
+function TileSkeleton() {
+  const bar = (grow) => (
+    <span style={{
+      flex: grow, height: 12, borderRadius: 'var(--r-sm)', background: 'var(--c-surface-tint)',
+    }}/>
+  );
+  return (
+    <div aria-hidden style={{
+      display: 'flex', alignItems: 'center', gap: 'var(--s-12)',
+      minHeight: 84, padding: 'var(--pad-card)',
+      background: 'var(--c-surface)', border: '1px solid var(--c-line)',
+      borderRadius: 'var(--r-lg)',
+    }}>{bar(3)}{bar(1)}</div>
+  );
+}
+
+// ─── Sheet — a thing floating over the screen that wants an answer ─
 // The one place the system allows a shadow, and it is spent here: this is not a
-// panel sitting on the page, it is a thing floating over it that wants an answer.
-function Sheet({ children, onDismiss }) {
+// panel sitting on the page, it is a thing over it.
+//
+// `handle` is the grab bar, and it is a promise: this sheet can be dismissed by
+// swiping it away. A sheet that demands an answer — a delete confirmation —
+// does not get one, because it must not be swiped past by accident.
+// `padded` off hands the padding to the body, for a sheet whose header runs
+// edge to edge under its own hairline.
+function Sheet({ children, onDismiss, handle, padded = true }) {
   return (
     <div onClick={onDismiss} style={{
       position: 'absolute', inset: 0, zIndex: 40,
@@ -395,9 +468,38 @@ function Sheet({ children, onDismiss }) {
         background: 'var(--c-surface)',
         borderRadius: 'var(--r-xl) var(--r-xl) 0 0',
         boxShadow: 'var(--shadow-sheet)',
-        padding: 'var(--s-24) var(--pad-phone) var(--s-40)',
+        padding: padded ? 'var(--s-24) var(--pad-phone) var(--s-40)' : 0,
         overscrollBehavior: 'contain',
-      }}>{children}</div>
+        animation: 'app-sheet-in var(--dur-sheet) var(--ease-out)',
+      }}>
+        {handle && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--s-8) 0 var(--s-4)' }}>
+            <span aria-hidden style={{
+              width: 36, height: 4, borderRadius: 'var(--r-pill)', background: 'var(--c-line-strong)',
+            }}/>
+          </div>
+        )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Sheet header — cancel and commit, above the keyboard ────
+// The form sheet puts its two actions at the TOP, which looks upside down until
+// you open a keyboard: on a phone the bottom third of a form sheet belongs to
+// iOS, and a commit button parked under it is a commit button nobody can reach.
+// Mela, Plane Finder and Shopify all resolve it the same way.
+function SheetHead({ onCancel, action }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: 'var(--s-12)', height: 'var(--h-md)',
+      padding: '0 var(--pad-phone)', borderBottom: '1px solid var(--c-line)',
+    }}>
+      <Btn kind="ghost" size="sm" onClick={onCancel}
+        style={{ marginLeft: 'calc(-1 * var(--s-12))' }}>Cancel</Btn>
+      {action}
     </div>
   );
 }
@@ -411,6 +513,9 @@ function Sheet({ children, onDismiss }) {
 //
 // A <div> and not a <button>: it contains the Toggle, and a button inside a
 // button is invalid. Toggle stops its own click from reaching the row.
+// The chevron is the row saying it goes somewhere — without it the switch is
+// the only thing that looks live and editing is a feature you have to guess at.
+// Shopify's variant rows do the same: status on the row, arrow to the record.
 function ItemRow({ name, price, available, onOpen, onToggle }) {
   return (
     <div role="button" tabIndex={0} onClick={onOpen} data-row
@@ -429,6 +534,9 @@ function ItemRow({ name, price, available, onOpen, onToggle }) {
       <Money value={price} size="body-sm"
         style={{ width: 64, textAlign: 'right', color: 'var(--c-ink-soft)', flexShrink: 0 }}/>
       <Toggle on={available} onChange={onToggle} blockedWhenOff label={`${name} available`}/>
+      <span aria-hidden style={{ color: 'var(--c-ink-faint)', display: 'inline-flex', flexShrink: 0 }}>
+        {I.chevronRight}
+      </span>
     </div>
   );
 }
@@ -455,13 +563,19 @@ function ItemGroup({ category, children }) {
 }
 
 // ─── Order line — one line of the running order, on the slab ──
-// `price` is the line total; the unit price lives on the menu tile. When the item
-// behind the line goes sold out the stepper is gone — there is nothing left to
-// increment — and the line offers the only move left: take it off.
+// `price` is the line total; the unit price lives on the menu tile.
+//
+// `note` is the one slot where the line says what just happened to it — the same
+// slot whatever happened, so the cashier learns one place to look. Its tone is
+// the meaning: blocked = you can no longer sell this (sold out, or the item is
+// off the menu entirely), live = the number to its right is not the number that
+// was there a second ago. `stopped` takes the stepper away, because a line you
+// cannot sell has nothing left to increment — it offers the only move left.
+//
 // `emphasis` is a counter, not a flag: re-tapping the same item has to read as a
 // second event, and changing the key restarts the animation where a boolean
 // would sit there already true.
-function OrderLine({ name, qty, price, blocked, live, emphasis, onDec, onInc, onRemove }) {
+function OrderLine({ name, qty, price, note, stopped, live, emphasis, onDec, onInc, onRemove }) {
   return (
     <div data-line={name} style={{
       position: 'relative',
@@ -484,9 +598,9 @@ function OrderLine({ name, qty, price, blocked, live, emphasis, onDec, onInc, on
           fontSize: 'var(--t-body)', fontWeight: 500, color: 'var(--c-on-slab)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{name}</div>
-        {blocked && <div style={{ marginTop: 'var(--s-4)' }}><Tag tone="blocked">Sold out</Tag></div>}
+        {note && <div style={{ marginTop: 'var(--s-4)' }}><Tag tone={note.tone}>{note.text}</Tag></div>}
       </div>
-      {blocked
+      {stopped
         ? <Btn kind="onslab" onClick={onRemove}>Remove</Btn>
         : <Stepper value={qty} onDec={onDec} onInc={onInc} onSlab label={name}/>}
       <Money value={price} style={{ width: 88, textAlign: 'right', color: 'var(--c-on-slab)' }}/>
@@ -495,7 +609,8 @@ function OrderLine({ name, qty, price, blocked, live, emphasis, onDec, onInc, on
 }
 
 Object.assign(window, {
-  Btn, Card, Slab, LiveEdge, Chip, Tag, Label, Money, Heading, Toggle, Rule, SectionHead,
-  Stepper, MenuTile, MenuGrid, OrderLine, ItemRow, ItemGroup, Field, Sheet, ORDER_ROW_H,
+  Btn, Card, Slab, LiveEdge, LiveDot, Chip, Tag, Label, Money, Heading, Toggle, Rule, SectionHead,
+  Stepper, MenuTile, MenuGrid, TileSkeleton, OrderLine, ItemRow, ItemGroup, Field,
+  Sheet, SheetHead, ORDER_ROW_H,
   Icon: I, ico,
 });

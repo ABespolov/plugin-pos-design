@@ -5,9 +5,11 @@ Single page, React + Babel-standalone via CDN, **no build step**. It feeds a
 Flutter implementation in the sibling repo `plugin` — every design choice must be
 portable to Flutter.
 
-**Status:** the design system is set — brand-grounded tokens, atoms, device frames
-and the canvas are wired. **No screen is designed yet**; `screens.jsx` holds two
-placeholders.
+**Status:** the design system is set, and both apps are drawn. `screens.jsx` holds
+`POSOrder` (the counter screen, with every kind of live change it can receive),
+and `ManagerMenu` (the list, and the item sheet it opens for create / edit /
+delete). Each ships one working prototype plus the stills of the states it
+passes through.
 
 ## What we're designing
 
@@ -32,9 +34,16 @@ and **the same menu data reads in two very different layouts**.
 Bind every value on screen to a field that exists. If it isn't in the model,
 don't render it — add the field upstream or omit it.
 
-- **MenuItem** — `name`, `price`, `category`, `available` (bool).
-- **Order** — a list of lines (`MenuItem` + quantity) and a running total derived
-  from them. The total is computed, never stored on a line.
+- **MenuItem** — `name`, `price`, `category`, `available` (bool). A category is
+  this string and nothing more: the list of categories is derived from the items
+  and sorted A–Z. There is no category record, no ordering field and no screen
+  for managing them — the brief has no such thing, and inventing one costs a
+  second collection, its rules, and a rename that has to write across every item
+  pointing at it.
+- **Order** — a list of lines (`MenuItem` + quantity + the unit price it is being
+  sold at) and a running total derived from them. The total is computed, never
+  stored. The unit is on the line so a ticket survives its item being deleted
+  mid-order.
 
 No invented fields (no ratings, prep times, stock counts, images) until they
 exist in the backend. And **each fact appears in exactly one place per screen** —
@@ -73,8 +82,9 @@ thing, *this just changed right now*, and lives **only on ink** (on paper it is
 the only hue on paper; available is the default state and carries no color.
 
 The short version: only `--c-*` colors (no raw hex/rgba in component code), the
-4-px spacing grid, the 9-step type scale, DM Sans (Instrument Sans for large
-numerals only), `--r-md` on buttons and pill for chips/tags only, 48-px controls,
+4-px spacing grid, the 9-step type scale, DM Sans (Instrument Sans for all money,
+at every size — it is the only face here with `tnum`), `--r-md` on buttons and
+pill for chips/tags only, 48-px controls,
 `--c-ink-soft` (never `--c-ink-faint`) for readable secondary copy.
 
 There are **no theming knobs** — one light token set, no `data-palette` /
@@ -100,7 +110,7 @@ Token edits, copy fixes and bug fixes don't need it.
 | [_live.html](_live.html) | Single-screen preview harness: `_live.html?s=Name` (`&d=tablet`, `&state=…`, `&fit=1`, `&frame=0`, `&w=`, `&h=`). No canvas, so it stays light enough to screenshot |
 | [tokens.css](tokens.css) | **Single source of truth** for colors, type, spacing, radii, motion |
 | [STYLE_GUIDE.md](STYLE_GUIDE.md) | The direction, the reference lock, the decision ledger, and the do / don't |
-| [ui.jsx](ui.jsx) | Shared atoms — `Btn`, `Card`, `Slab`, `LiveEdge`, `Chip`, `Tag`, `Label`, `Money`, `Heading`, `Toggle`, `Rule`, `SectionHead`, icon set `I` / `ico` |
+| [ui.jsx](ui.jsx) | Shared atoms — `Btn`, `Card`, `Slab`, `LiveEdge`, `LiveDot`, `Chip`, `Tag`, `Label`, `Money`, `Heading`, `Toggle`, `Rule`, `SectionHead`, `MenuTile`, `TileSkeleton`, `OrderLine`, `ItemRow`, `ItemGroup`, `Field`, `Sheet`, `SheetHead`, icon set `I` / `ico` |
 | [.claude/skills/new-screen/SKILL.md](.claude/skills/new-screen/SKILL.md) | The mandatory pre-screen research gate |
 | [screens.jsx](screens.jsx) | Product screens. One function per screen, exported on `window` |
 | [starters/ios-frame.jsx](starters/ios-frame.jsx) | iPhone frame (390×844) — Manager |

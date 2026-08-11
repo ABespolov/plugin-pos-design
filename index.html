@@ -56,9 +56,15 @@ function App() {
   return (
     <W.DesignCanvas minScale={0.1} maxScale={3}>
       <W.DCSection id="pos" title="POS · tablet"
-        subtitle="Live menu — name, price, category, availability. Tapping items builds an order with a running total. The first artboard is live: tap the menu, use the steppers, and after 8s a manager edit lands.">
+        subtitle="Live menu — name, price, category, availability. Tapping items builds an order with a running total. The first artboard is live: tap the menu, use the steppers, and from 8s on the manager's edits land one at a time — sold out, a new price, a change in a category you are not looking at, an item leaving the menu mid-order, and a new item arriving.">
         <W.DCArtboard id="pos-order" label="POS · menu & order — INTERACTIVE" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
           <Tablet><W.POSOrder/></Tablet>
+        </W.DCArtboard>
+        <W.DCArtboard id="pos-loading" label="POS · before the first snapshot" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder state="loading"/></Tablet>
+        </W.DCArtboard>
+        <W.DCArtboard id="pos-blank" label="POS · menu is empty" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder state="blank"/></Tablet>
         </W.DCArtboard>
         <W.DCArtboard id="pos-order-empty" label="POS · empty order" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
           <Tablet><W.POSOrder state="empty"/></Tablet>
@@ -66,27 +72,39 @@ function App() {
         <W.DCArtboard id="pos-order-live" label="POS · item just went sold out" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
           <Tablet><W.POSOrder state="live"/></Tablet>
         </W.DCArtboard>
+        <W.DCArtboard id="pos-order-price" label="POS · price just changed under the ticket" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder state="price"/></Tablet>
+        </W.DCArtboard>
+        <W.DCArtboard id="pos-order-gone" label="POS · item left the menu mid-order" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder state="gone"/></Tablet>
+        </W.DCArtboard>
+        <W.DCArtboard id="pos-order-elsewhere" label="POS · change in a category nobody is watching" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
+          <Tablet><W.POSOrder state="elsewhere"/></Tablet>
+        </W.DCArtboard>
         <W.DCArtboard id="pos-order-open" label="POS · ticket expanded" width={TABLET_W + TABLET_PAD} height={TABLET_H + TABLET_PAD}>
           <Tablet><W.POSOrder state="open"/></Tablet>
         </W.DCArtboard>
       </W.DCSection>
 
       <W.DCSection id="manager" title="Manager · phone"
-        subtitle="Create, edit, delete menu items and flip them sold out. Every change lands on the POS in real time.">
-        <W.DCArtboard id="manager-menu" label="Manager · menu list — INTERACTIVE" width={PHONE_W + PAD} height={PHONE_H + PAD}>
+        subtitle="Create, edit, delete menu items and flip them sold out. Every change lands on the POS in real time. The first artboard is the whole flow: tap a row to open the item sheet, add an item, delete one, and watch the list underneath change.">
+        <W.DCArtboard id="manager-menu" label="Manager · menu list & item sheet — INTERACTIVE" width={PHONE_W + PAD} height={PHONE_H + PAD}>
           <Phone><W.ManagerMenu/></Phone>
         </W.DCArtboard>
         <W.DCArtboard id="manager-menu-empty" label="Manager · empty menu" width={PHONE_W + PAD} height={PHONE_H + PAD}>
           <Phone><W.ManagerMenu state="empty"/></Phone>
         </W.DCArtboard>
-        <W.DCArtboard id="manager-edit" label="Manager · edit item — INTERACTIVE" width={PHONE_W + PAD} height={PHONE_H + PAD}>
-          <Phone><W.ManagerItemEdit/></Phone>
+        <W.DCArtboard id="manager-edit" label="Manager · item sheet, editing" width={PHONE_W + PAD} height={PHONE_H + PAD}>
+          <Phone><W.ManagerMenu state="edit"/></Phone>
         </W.DCArtboard>
-        <W.DCArtboard id="manager-edit-new" label="Manager · new item" width={PHONE_W + PAD} height={PHONE_H + PAD}>
-          <Phone><W.ManagerItemEdit state="new"/></Phone>
+        <W.DCArtboard id="manager-edit-new" label="Manager · item sheet, new item" width={PHONE_W + PAD} height={PHONE_H + PAD}>
+          <Phone><W.ManagerMenu state="new"/></Phone>
+        </W.DCArtboard>
+        <W.DCArtboard id="manager-edit-errors" label="Manager · saved with nothing filled in" width={PHONE_W + PAD} height={PHONE_H + PAD}>
+          <Phone><W.ManagerMenu state="errors"/></Phone>
         </W.DCArtboard>
         <W.DCArtboard id="manager-edit-delete" label="Manager · delete confirm" width={PHONE_W + PAD} height={PHONE_H + PAD}>
-          <Phone><W.ManagerItemEdit state="delete"/></Phone>
+          <Phone><W.ManagerMenu state="delete"/></Phone>
         </W.DCArtboard>
       </W.DCSection>
     </W.DesignCanvas>

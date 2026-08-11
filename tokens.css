@@ -62,8 +62,11 @@
 
   /* ── Type ─────────────────────────────────────────────────────
      DM Sans is the brand's default family and carries all UI.
-     Instrument Sans is the brand's second face, used ONLY for large
-     numerals (the running total) where condensed digits read better. */
+     Instrument Sans is the brand's second face and carries EVERY number that
+     is money, at any size — not as a decorative swap but because DM Sans has
+     no `tnum` and proportional digits, so a column of prices set in it does
+     not align. Instrument Sans is the only one of the two that has the
+     feature. Never set a word in it. */
   --font-sans:    'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-numeric: 'Instrument Sans', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 
@@ -161,6 +164,12 @@
   from { opacity: 1; }
   to   { opacity: 0; }
 }
+/* A sheet arriving from the edge it is anchored to. One movement: the sheet
+   travels, the scrim behind it does not — SlideTransition in Flutter. */
+@keyframes app-sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
 
 /* Motion is decoration: every animated surface still renders, it just stops
    moving. A live edge that cannot animate stays lit rather than vanishing —
@@ -189,8 +198,9 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Money and quantities are columns of digits: they must align. Everything
-   numeric gets tabular figures, everywhere, without asking. */
+/* Money and quantities are columns of digits: they must align. This rule only
+   bites where the face has the feature — DM Sans does not ship `tnum`, which
+   is exactly why money is set in Instrument Sans and not in the UI face. */
 .app-screen { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
 
 /* Hide scrollbars inside screens for a clean device look */

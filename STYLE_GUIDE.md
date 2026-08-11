@@ -36,6 +36,16 @@ are DM Sans and Instrument Sans, and their logo mark is `#1de6f1`.
 | **Borrow only** | Mews — the black slab as a hierarchy device. Turso — how one electric accent behaves against near-black |
 | **Reject** | A dark theme "because bars are dark" · cyan CTAs · shadows · pill buttons in a dense grid · a second accent hue |
 
+Screen-level patterns came from Refero, and each is named in the ledger below:
+Shopify's variant rows (a status control *and* a chevron on the same row),
+Roots' app-group flow (list → edit → destructive confirm → the refreshed list),
+Mela and Plane Finder (a form sheet whose actions sit in its header, above the
+keyboard), Airbnb and ElevenLabs (validate on submit, inline, never a mute
+disabled button), and On's cart (a line in the ticket carrying its own constraint
+message). Drinkit's sheet is the one we looked at and rejected: its full-width
+footer CTA is right for a cart with no keyboard and wrong for a form with two
+text fields.
+
 ### Decision ledger
 
 | Decision | Source | Role preserved | Why |
@@ -48,7 +58,20 @@ are DM Sans and Instrument Sans, and their logo mark is `#1de6f1`.
 | Buttons `--r-md` (10px), pill for chips/tags only | shadcn/ui: 10px buttons + pill badges | radius roles | A grid of pill buttons on a POS reads as a toy |
 | Body 16px, controls 48px | POS is read and tapped at arm's length | density | 15/44 is phone-scale and too tight on a counter tablet |
 | Red is the only hue on paper | shadcn/ui `Callout Red` | destructive/error | A cashier must catch "sold out" without reading it |
-| Tabular figures everywhere | craft | numerals | Prices are a column; proportional digits make them jitter |
+| All money in Instrument Sans, tabular | brand's second face; craft | numerals | Prices are a column and proportional digits make them jitter — and DM Sans ships no `tnum`, so the UI face cannot hold one however it is asked |
+| Every kind of change speaks in **one slot on the line** — tone says which | On's cart (a line carrying its own constraint message) | status | Sold out, off the menu and re-priced are one question for the cashier: *is this line still what I told the customer?* One place to look, and the tone answers it |
+| Sold out **replaces the price** on a tile | — | status | A tag on its own line grows the tile, a taller tile grows its grid row, and every target below it moves — from a change the cashier did not make. The right column is also the one the eye runs down |
+| A live change nobody can see gets a **dot on the container** — the category chip, or the ticket's expander | — | status | The edge can only mark a thing that is on screen. The dot is cyan with a 1px ink ring: the hue carries the meaning, the ring carries the contrast cyan cannot have on paper |
+| Blocked lines **stay in the total** | — | money | The total has to equal the lines above it. A number that quietly drops itself cannot be checked by looking; taking money off is the cashier's move (Remove), never the system's |
+| Order lines carry their **own unit price** | — | data | The ticket then survives its item being deleted mid-order, and a price edit is an event that happens *to* the line rather than a lookup that silently returns something else |
+| The item editor is a **bottom sheet**, not a pushed screen | Mela · Plane Finder "Add Alert" | form | Three fields and a button do not need a whole screen, and the list staying visible behind it is what makes Cancel obviously free |
+| Its Cancel and commit sit in the **sheet's header** | Mela · Plane Finder · Shopify | form | On a phone the bottom third of a form sheet belongs to the keyboard. A commit button parked there is a commit button nobody can reach |
+| Availability is **not** in the sheet | — | form | It is one switch on the row behind it. Two copies of the same fact on one screen is one copy too many |
+| Save is **never disabled**; errors appear on the attempt | Airbnb "Finish signing up" · craft-details | form | A greyed-out button that will not say what is wrong is a dead end. Tapping it and being told is not |
+| The delete confirmation **replaces** the sheet's body | Roots app groups | confirm | Two sheets deep is a place to find your way out of; one sheet that changes its mind is a question |
+| The row carries a **chevron as well as** its switch | Shopify variant rows | navigation | Without it the switch is the only thing that looks live, and editing is a feature you have to guess at |
+| Categories stay a **value on the item**, sorted A–Z | the brief's own model | data | A category collection would buy rename, ordering and a management screen — none of which the brief asks for, all of which cost a second collection, its rules, and a rename that writes across every item pointing at it. A–Z is an order the cashier can predict for nothing |
+| Category is **one field**, with the names in use as chips under it | — | form | There is no managing categories anywhere in this app, so there is no picker and no "+ New" mode either — two modes for one string is how typing a word becomes a feature. The chips keep it a choice from four rather than four spellings of the same word, and a name that matches an existing one in any case joins it |
 
 ---
 
@@ -89,9 +112,15 @@ On-slab text uses `--c-on-slab` / `--c-on-slab-soft` and its own hairline
 ## Type
 
 **DM Sans** carries all UI — it is the brand's default family. **Instrument
-Sans** (the brand's second face) is used *only* for large numerals, where its
-condensed digits hold a big total together. That is a functional role, not a
-decorative font swap; never set a word in it for emphasis.
+Sans** (the brand's second face) carries **every number that is money**, at
+every size. That is a functional role, not a decorative font swap; never set a
+word in it for emphasis.
+
+It is money's face for one hard reason: **DM Sans has no `tnum` feature and its
+digits are proportional** — its `1` is 312 units against its `0`'s 684, so a
+column of prices set in it visibly jitters, and asking for `tabular-nums` does
+nothing about it. Instrument Sans has the feature. Prices are the one thing on
+this screen a cashier reads as a column, so they get the face that can hold one.
 
 Nine steps, `--t-caption … --t-display`. Weights 400 / 500 / 600 / 700. Body is
 400; emphasis is 600 on the highlighted span, never a size bump.
@@ -102,8 +131,9 @@ Two tracking tokens, both the brand's own:
   typographic move, and the way a region gets named (`CATEGORY`, `ORDER`)
   without competing with content. Use `<Label>`, don't hand-roll it.
 
-Everything numeric is tabular (`.app-screen` sets it globally). Money goes
-through `<Money>`.
+`.app-screen` asks for tabular figures globally, but only Instrument Sans can
+answer. Money goes through `<Money>`, which is what puts it in that face — a
+price written as a bare `<span>` is a bug, not a shortcut.
 
 ## Spacing
 
@@ -167,15 +197,26 @@ Live in [ui.jsx](ui.jsx) with strict contracts. Use them.
   `outline` · `quiet` · `ghost` · `blocked` · `live` and `onslab` (**slab only**).
   `size` ∈ `sm | md | lg` (36 / 48 / 60).
 - `<Card padded live>` — white surface, hairline, no shadow. `live` lights the
-  cyan edge. **Content only, never an input** — inputs need a shell with no card
-  padding; extract it once when the first field lands.
+  cyan edge. **Content only, never an input** — that is what `Field` is for.
 - `<Slab>` — the near-black surface. **One per screen.** A second slab and
   neither reads as the important one. The only place cyan is allowed.
-- `<LiveEdge side>` — the 3px cyan edge that fades. Nothing else uses this color.
-- `<Chip on>` (selectable) vs `<Tag tone>` (non-interactive label).
+- `<LiveEdge side>` — the 3px cyan edge that fades, on a thing you can see.
+  `<LiveDot ring>` — the same news when the thing itself is off screen; `ring`
+  is required on paper and wrong on ink. Nothing else uses this color.
+- `<Chip on dot>` (selectable) vs `<Tag tone>` (non-interactive label).
 - `<Label>` — the uppercase micro-label. `<Heading size>`, `<Money value size>`.
 - `<Toggle on blockedWhenOff>` — the sold-out switch; off is not neutral grey,
   off is *blocked*.
+- `<MenuTile available live>` — fixed 84 in every state. `<TileSkeleton>` is the
+  same tile before the first snapshot: two bars, no spinner.
+- `<OrderLine note stopped live emphasis>` — `note` is `{tone, text}` and the one
+  slot a line uses to say what happened to it; `stopped` takes the stepper away
+  and offers Remove instead.
+- `<ItemRow onOpen onToggle>` — the manager's row: switch *and* chevron.
+- `<Field error inputRef>` — the labelled input. `error` is a sentence under a
+  blocked border, and it only ever appears after an attempt to save.
+- `<Sheet handle padded onDismiss>` + `<SheetHead onCancel action>` — the form
+  sheet. `handle` promises it can be swiped away, so a confirmation never gets one.
 - `<Rule onSlab>`, `<SectionHead title sub action>`.
 
 ## Icons
@@ -265,6 +306,17 @@ Refero has no coverage of cashier-facing POS, so those rows are grounded in
 Square and Toast's own product documentation rather than in reference screens.
 Weaker evidence than the rest of this file, and worth saying out loud.
 
+### Deliberately not designed
+
+Not oversights. If one of these becomes a requirement it gets designed then.
+
+| Not here | Why |
+|---|---|
+| **Taking payment.** The order has a total and a Clear, and no Charge | The brief ends at "builds an order with a running total". The slab is already carrying the money; adding a commit action is a product decision, not a layout one |
+| **Connection status.** No offline banner in either app | Firestore serves its cache offline and queues writes; the register keeps working. Called out here because a real-time product with no connection state is a gap someone should be able to find on purpose rather than by accident |
+| **Search and favourites** | Out of scope while the menu is this size — the first thing to add when it grows |
+| **Sign-in, roles, more than one till** | The security rules are a backend concern in the Flutter repo; nothing on these screens depends on who is holding the device |
+
 ## Flutter portability
 
 This canvas is a specification for a Flutter app, not a website. Check every
@@ -290,7 +342,8 @@ found here it's a five-minute edit.
 - Controls keep fixed heights (36 / 48 / 60) and `--r-md`; they map straight onto
   `ButtonStyle`.
 - Layout is flex: rows, columns, gaps. No CSS Grid areas, no `position: sticky`.
-- Tabular figures are `FontFeature.tabularFigures()` — supported, keep using them.
+- Tabular figures are `FontFeature.tabularFigures()` — supported, and it must go
+  on the money styles specifically, since DM Sans has nothing to switch on.
 
 **Expect to re-tune by eye, not by number:** text vertical rhythm
 (`line-height` vs Flutter's `height` handles leading differently) and large

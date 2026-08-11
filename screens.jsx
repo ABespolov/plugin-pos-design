@@ -11,7 +11,7 @@
 const {
   Slab, Rule, Label, Money, Tag, Heading, Btn, Chip, LiveDot,
   MenuTile, MenuGrid, TileSkeleton, OrderLine, ItemRow, ItemGroup, Field,
-  Sheet, SheetHead, ORDER_ROW_H, Icon: I,
+  Sheet, SheetHead, ORDER_ROW_H, UI_MS, SHEET_MS, Icon: I,
 } = window;
 
 // Fixture data. A MenuItem is name · price · category · available and nothing
@@ -186,6 +186,8 @@ function POSOrder({ state }) {
   // same item twice is two events; `bumped` says the line already existed, so
   // it needs emphasis rather than the arrival animation it will never play.
   const [touch, setTouch] = React.useState({ name: null, n: 0, bumped: false });
+  // Lines that have been removed and are still closing.
+  const [going, setGoing] = React.useState([]);
   const [cat, setCat] = React.useState('Coffee');
   const [expanded, setExpanded] = React.useState(state === 'open');
   // Captured when it opens, not derived live: sizing the sheet to the ticket
@@ -236,6 +238,10 @@ function POSOrder({ state }) {
   // NOT re-order — a line must not move out from under the finger using it.
   const add = item => {
     const had = lines.some(l => l.name === item.name);
+    // Ringing something up again while its row is still closing cancels the
+    // closing — otherwise the timer would take away a line the cashier has just
+    // put back.
+    setGoing(g => g.filter(n => n !== item.name));
     setLines(ls => {
       const cur = ls.find(l => l.name === item.name);
       return [{ name: item.name, unit: item.price, qty: cur ? cur.qty + 1 : 1 },
@@ -243,9 +249,28 @@ function POSOrder({ state }) {
     });
     setTouch(t => ({ name: item.name, n: t.n + 1, bumped: had }));
   };
-  const bump = (name, d) => setLines(ls => ls.flatMap(l =>
-    l.name !== name ? [l] : (l.qty + d < 1 ? [] : [{ ...l, qty: l.qty + d }])));
-  const drop = name => setLines(ls => ls.filter(l => l.name !== name));
+  // A line leaves the way it arrived: it closes, and the lines under it are
+  // pulled up by that closing. Which means it has to stay in the ticket until
+  // the closing has finished — hence the two steps rather than one filter.
+  const drop = name => {
+    setGoing(g => [...g, name]);
+    setTimeout(() => {
+      setLines(ls => ls.filter(l => l.name !== name));
+      setGoing(g => g.filter(n => n !== name));
+    }, UI_MS);
+  };
+  const bump = (name, d) => {
+    const l = lines.find(x => x.name === name);
+    if (l && l.qty + d < 1) return drop(name);
+    setLines(ls => ls.map(x => x.name === name ? { ...x, qty: x.qty + d } : x));
+  };
+  // Clear empties the ticket in one movement rather than in as many movements as
+  // there are lines: every row closes at once, and the panel is empty when they
+  // have. The panel itself never moves, so there is nothing else going on.
+  const clear = () => {
+    setGoing(lines.map(l => l.name));
+    setTimeout(() => { setLines([]); setGoing([]); }, UI_MS);
+  };
 
   const categories = catsOf(items);
   const shown = items.filter(i => i.category === cat);
@@ -323,6 +348,7 @@ function POSOrder({ state }) {
               <MenuTile key={item.name} name={item.name} price={money(item.price)}
                 available={item.available}
                 live={edgeFor(item.name)}
+                arriving={(changeFor(item.name) || {}).kind === 'new'}
                 onClick={() => add(item)}/>
             ))}
           </MenuGrid>
@@ -369,7 +395,7 @@ function POSOrder({ state }) {
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', paddingRight: 'var(--pad-tablet)' }}>
-            {lines.length > 0 && <Btn kind="onslab" size="sm" onClick={() => setLines([])}>Clear</Btn>}
+            {lines.length > 0 && <Btn kind="onslab" size="sm" onClick={clear}>Clear</Btn>}
           </div>
         </div>
 
@@ -388,7 +414,7 @@ function POSOrder({ state }) {
           ) : ticket.map(l => (
             <OrderLine key={l.name} name={l.name} qty={l.qty} price={money(l.unit * l.qty)}
               {...stateOf(l)}
-              live={edgeFor(l.name)}
+              live={edgeFor(l.name)} leaving={going.includes(l.name)}
               emphasis={touch.bumped && touch.name === l.name ? touch.n : 0}
               onDec={() => bump(l.name, -1)}
               onInc={() => bump(l.name, +1)}
@@ -436,6 +462,8 @@ function ManagerMenu({ state }) {
     const seed = SHEET_STATES[state];
     return seed ? { item: seed.name ? MENU.find(i => i.name === seed.name) : undefined } : null;
   });
+  // Rows that have been deleted and are still closing.
+  const [going, setGoing] = React.useState([]);
 
   const toggle = name => setItems(prev => prev.map(i =>
     i.name === name ? { ...i, available: !i.available } : i));
@@ -445,9 +473,16 @@ function ManagerMenu({ state }) {
       : [...prev, draft]);
     setEditing(null);
   };
+  // The sheet has already slid away by the time this runs, so the row closing is
+  // the only thing moving: two events, one after the other, rather than a screen
+  // where a panel leaves and a list jumps in the same frame.
   const remove = original => {
-    setItems(prev => prev.filter(i => i.name !== original.name));
     setEditing(null);
+    setGoing(g => [...g, original.name]);
+    setTimeout(() => {
+      setItems(prev => prev.filter(i => i.name !== original.name));
+      setGoing(g => g.filter(n => n !== original.name));
+    }, UI_MS);
   };
 
   const empty = items.length === 0;
@@ -492,7 +527,7 @@ function ManagerMenu({ state }) {
           <ItemGroup key={category} category={category}>
             {items.filter(i => i.category === category).map(item => (
               <ItemRow key={item.name} name={item.name} price={money(item.price)}
-                available={item.available}
+                available={item.available} leaving={going.includes(item.name)}
                 onOpen={() => setEditing({ item })}
                 onToggle={() => toggle(item.name)}/>
             ))}
@@ -557,6 +592,16 @@ function ManagerItemSheet({ item, items = MENU, confirming: startConfirming, tri
   const nameRef = React.useRef(null);
   const priceRef = React.useRef(null);
 
+  // Every way out of this sheet goes through here: it slides away first and the
+  // screen behind it acts second. Cancel, Save and Delete are all the same
+  // exit, so they cannot look like three different ones.
+  const [leaving, setLeaving] = React.useState(false);
+  const leave = done => {
+    if (leaving) return;
+    setLeaving(true);
+    setTimeout(done, UI_MS);
+  };
+
   const taken = items.some(i => same(i.name, name) && (!item || i.name !== item.name));
   const errors = {
     name: !name.trim() ? 'Give the item a name.'
@@ -571,8 +616,8 @@ function ManagerItemSheet({ item, items = MENU, confirming: startConfirming, tri
     setTried(true);
     if (errors.name) return nameRef.current && nameRef.current.focus();
     if (errors.price) return priceRef.current && priceRef.current.focus();
-    onSave && onSave({ name: name.trim(), price: parsePrice(price), category: cat,
-                       available: item ? item.available : true });
+    leave(() => onSave && onSave({ name: name.trim(), price: parsePrice(price), category: cat,
+                                   available: item ? item.available : true }));
   };
 
   // The confirmation replaces the form rather than stacking a second sheet on
@@ -580,14 +625,14 @@ function ManagerItemSheet({ item, items = MENU, confirming: startConfirming, tri
   // of; one sheet that changes its mind is a question.
   if (confirming) {
     return (
-      <Sheet>
+      <Sheet leaving={leaving}>
         <Heading size="sub">Delete {item ? item.name : 'this item'}?</Heading>
         <div style={{
           fontSize: 'var(--t-body)', color: 'var(--c-ink-soft)',
           lineHeight: 1.5, margin: 'var(--s-8) 0 var(--s-24)',
         }}>It leaves the counter immediately. This cannot be undone.</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-8)' }}>
-          <Btn kind="blocked" full onClick={() => onDelete && onDelete()}>Delete</Btn>
+          <Btn kind="blocked" full onClick={() => leave(() => onDelete && onDelete())}>Delete</Btn>
           <Btn kind="ghost" full onClick={() => setConfirming(false)}>Cancel</Btn>
         </div>
       </Sheet>
@@ -595,8 +640,8 @@ function ManagerItemSheet({ item, items = MENU, confirming: startConfirming, tri
   }
 
   return (
-    <Sheet handle padded={false} onDismiss={onCancel}>
-      <SheetHead onCancel={onCancel}
+    <Sheet handle padded={false} leaving={leaving} onDismiss={() => leave(onCancel)}>
+      <SheetHead onCancel={() => leave(onCancel)}
         action={<Btn kind="slab" size="sm" onClick={submit}>{isNew ? 'Add item' : 'Save changes'}</Btn>}/>
 
       <div style={{

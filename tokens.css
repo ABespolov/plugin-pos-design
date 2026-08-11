@@ -140,9 +140,10 @@
   --gap-row: 12px;
 }
 
-/* Global keyframes */
-@keyframes app-spin { to { transform: rotate(360deg); } }
-@keyframes app-fadeup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* Global keyframes.
+   Every one of these has a partner or a reason: nothing here arrives without a
+   way to leave, because a thing that fades in and then vanishes on a frame is
+   the jankiest half-animation there is. */
 /* The live edge: a change from the manager lands, the edge lights, then goes.
    Full opacity is held for most of the duration so a cashier mid-pour still
    catches it; only the tail fades. */
@@ -159,16 +160,43 @@
   from { height: 0; opacity: 0; }
   to   { height: var(--h-order-row); opacity: 1; }
 }
+/* And leaving, which is the same motion run backwards — the row closes and the
+   rows under it are pulled up BY that closing, not by a jump once it is gone.
+   A list that animates arrivals and teleports departures is half-animated, and
+   the half that teleports is the one the eye notices. Used by both row heights
+   in the product, because both are exactly --h-order-row tall. */
+@keyframes app-line-out {
+  from { height: var(--h-order-row); opacity: 1; }
+  to   { height: 0; opacity: 0; }
+}
 /* A quantity changing on a line already in the ticket. */
 @keyframes app-emphasis {
   from { opacity: 1; }
   to   { opacity: 0; }
 }
-/* A sheet arriving from the edge it is anchored to. One movement: the sheet
-   travels, the scrim behind it does not — SlideTransition in Flutter. */
+/* A sheet arriving from the edge it is anchored to, and leaving the same way.
+   The sheet travels; the scrim behind it only fades, so there is one moving
+   thing on screen and one darkening one — SlideTransition over a FadeTransition
+   in Flutter. Dismissal is not the entrance played backwards at the same speed:
+   it runs at --dur-ui rather than --dur-sheet, because a thing you have finished
+   with should not make you watch it go. No fifth duration for that — the exit is
+   ordinary UI feedback, which is exactly what --dur-ui is. */
 @keyframes app-sheet-in {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
+}
+@keyframes app-sheet-out {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+@keyframes app-scrim-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes app-scrim-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* A tile the manager just created, landing in the cashier's grid. It rises the
+   4px it takes to read as arriving and nothing around it moves. */
+@keyframes app-tile-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Motion is decoration: every animated surface still renders, it just stops

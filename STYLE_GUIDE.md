@@ -173,6 +173,15 @@ Motion has to do one of three jobs — **feedback**, **continuity** or
 tap is in one place, the result is in another, and nothing connects them but
 movement.
 
+**Everything that arrives has a way to leave.** A row that opens from zero and
+then vanishes on a frame is half-animated, and the half that teleports is the
+half the eye catches. So `app-line-in` has `app-line-out`, the sheet slides both
+ways, and the scrim fades in and out with it. Leaving runs at `--dur-ui`, not the
+duration it arrived on: a thing you have finished with should not make you watch
+it go. The cost is that the code has to hold the element until it has finished
+leaving — `UI_MS` / `SHEET_MS` in [ui.jsx](ui.jsx), mirroring the tokens — which
+is `AnimatedSize` and `AnimatedSwitcher` in Flutter, not a web-only trick.
+
 **One movement per frame.** A new line opens from zero to `--h-order-row`, and
 the lines under it are pushed down *by that same growth*. The earlier version
 slid the new row in while its neighbours jumped 64px instantly — half the frame

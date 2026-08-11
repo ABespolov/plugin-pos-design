@@ -49,6 +49,13 @@ const MENU_COLUMNS = 3;
 // Sold out tag — a ticket showing 3.2 rows would always cut one of them.
 const ORDER_ROW_H = 64;
 
+// The same trick for the two durations JavaScript has to know: a thing that
+// animates itself out has to stay mounted until it has finished doing it, and
+// only the code holding it can time that. Both mirror tokens.css — --dur-ui and
+// --dur-sheet — and neither is a number picked here.
+const UI_MS = 180;
+const SHEET_MS = 280;
+
 // ─── Button ──────────────────────────────────────────────────
 // `slab` is the primary: black fill, white label — the brand made black its
 // accent, so the strongest action on paper is ink. `live` is the only cyan
@@ -328,7 +335,7 @@ function Stepper({ value, onDec, onInc, onSlab, label = 'quantity' }) {
 // — from a change the cashier did not make and cannot predict. It also reads
 // better: the right-hand column is the one the eye already runs down, and the
 // price of something nobody can sell is not the news.
-function MenuTile({ name, price, available = true, live, onClick }) {
+function MenuTile({ name, price, available = true, live, arriving, onClick }) {
   return (
     <button
       type="button" aria-disabled={!available} data-tile
@@ -350,6 +357,8 @@ function MenuTile({ name, price, available = true, live, onClick }) {
         cursor: available ? 'pointer' : 'default',
         // named properties, never `all` — `all` would animate the layout too
         transition: 'background var(--dur-ui) var(--ease-out), transform 90ms var(--ease-out)',
+        // an item the manager just created does not blink into existence
+        ...(arriving ? { animation: 'app-tile-in var(--dur-ui) var(--ease-out)' } : null),
       }}>
       {live && <LiveEdge hold={live === 'hold'}/>}
       {/* name left, money right — the price column runs down the whole screen and
@@ -457,20 +466,33 @@ function TileSkeleton() {
 // does not get one, because it must not be swiped past by accident.
 // `padded` off hands the padding to the body, for a sheet whose header runs
 // edge to edge under its own hairline.
-function Sheet({ children, onDismiss, handle, padded = true }) {
+//
+// `leaving` runs the exit. The screen holding the sheet sets it, waits SHEET_MS
+// and only then unmounts — a sheet cannot animate itself away after it has
+// stopped existing. The scrim is its own layer so it can fade while the sheet
+// slides: two properties, but one moving object.
+function Sheet({ children, onDismiss, handle, padded = true, leaving }) {
   return (
     <div onClick={onDismiss} style={{
       position: 'absolute', inset: 0, zIndex: 40,
-      background: 'var(--c-scrim)',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
     }}>
+      <span aria-hidden style={{
+        position: 'absolute', inset: 0, background: 'var(--c-scrim)',
+        animation: leaving
+          ? 'app-scrim-out var(--dur-ui) var(--ease-out) forwards'
+          : 'app-scrim-in var(--dur-sheet) var(--ease-out)',
+      }}/>
       <div onClick={e => e.stopPropagation()} style={{
+        position: 'relative',
         background: 'var(--c-surface)',
         borderRadius: 'var(--r-xl) var(--r-xl) 0 0',
         boxShadow: 'var(--shadow-sheet)',
         padding: padded ? 'var(--s-24) var(--pad-phone) var(--s-40)' : 0,
         overscrollBehavior: 'contain',
-        animation: 'app-sheet-in var(--dur-sheet) var(--ease-out)',
+        animation: leaving
+          ? 'app-sheet-out var(--dur-ui) var(--ease-out) forwards'
+          : 'app-sheet-in var(--dur-sheet) var(--ease-out)',
       }}>
         {handle && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--s-8) 0 var(--s-4)' }}>
@@ -516,14 +538,21 @@ function SheetHead({ onCancel, action }) {
 // The chevron is the row saying it goes somewhere — without it the switch is
 // the only thing that looks live and editing is a feature you have to guess at.
 // Shopify's variant rows do the same: status on the row, arrow to the record.
-function ItemRow({ name, price, available, onOpen, onToggle }) {
+function ItemRow({ name, price, available, leaving, onOpen, onToggle }) {
   return (
-    <div role="button" tabIndex={0} onClick={onOpen} data-row
+    <div role="button" tabIndex={0} onClick={leaving ? undefined : onOpen} data-row
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen && onOpen(); } }}
       style={{
       display: 'flex', alignItems: 'center', gap: 'var(--s-12)',
       padding: '0 var(--pad-card)', height: 'var(--h-order-row)',
       cursor: 'pointer', transition: 'background var(--dur-ui) var(--ease-out)',
+      // a deleted row closes rather than disappearing, and the rows under it
+      // are pulled up by that closing — the same motion the order lines use
+      overflow: 'hidden',
+      ...(leaving ? {
+        animation: 'app-line-out var(--dur-ui) var(--ease-out) forwards',
+        pointerEvents: 'none',
+      } : null),
     }}>
       <span style={{
         flex: 1, minWidth: 0, fontSize: 'var(--t-body)', fontWeight: 500,
@@ -575,15 +604,19 @@ function ItemGroup({ category, children }) {
 // `emphasis` is a counter, not a flag: re-tapping the same item has to read as a
 // second event, and changing the key restarts the animation where a boolean
 // would sit there already true.
-function OrderLine({ name, qty, price, note, stopped, live, emphasis, onDec, onInc, onRemove }) {
+function OrderLine({ name, qty, price, note, stopped, live, emphasis, leaving,
+                     onDec, onInc, onRemove }) {
   return (
     <div data-line={name} style={{
       position: 'relative',
       display: 'flex', alignItems: 'center', gap: 'var(--s-16)',
       padding: '0 var(--pad-tablet)', height: 'var(--h-order-row)', flexShrink: 0,
-      // clipped so the content does not spill while the row opens
+      // clipped so the content does not spill while the row opens or closes
       overflow: 'hidden',
-      animation: 'app-line-in var(--dur-ui) var(--ease-out)',
+      animation: leaving
+        ? 'app-line-out var(--dur-ui) var(--ease-out) forwards'
+        : 'app-line-in var(--dur-ui) var(--ease-out)',
+      pointerEvents: leaving ? 'none' : undefined,
     }}>
       {live && <LiveEdge hold={live === 'hold'}/>}
       {emphasis > 0 && (
@@ -611,6 +644,6 @@ function OrderLine({ name, qty, price, note, stopped, live, emphasis, onDec, onI
 Object.assign(window, {
   Btn, Card, Slab, LiveEdge, LiveDot, Chip, Tag, Label, Money, Heading, Toggle, Rule, SectionHead,
   Stepper, MenuTile, MenuGrid, TileSkeleton, OrderLine, ItemRow, ItemGroup, Field,
-  Sheet, SheetHead, ORDER_ROW_H,
+  Sheet, SheetHead, ORDER_ROW_H, UI_MS, SHEET_MS,
   Icon: I, ico,
 });

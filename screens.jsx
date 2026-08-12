@@ -576,9 +576,16 @@ function ManagerMenu({ state }) {
 // Save is never disabled. A greyed-out button that will not say what is wrong
 // with the form is a dead end; tapping it and being told is not. So the errors
 // appear on the first attempt to save, and clear as each field is fixed.
+// A price is minor units in Flutter, never a float, so what cannot be expressed
+// in cents is not a price: `Number()` accepted 4.567, 4., .5, 1e3 and a
+// nine-digit total, and every one of them would have to be silently rounded or
+// truncated on the way into the database. Six whole digits is the ceiling the
+// security rules also carry.
 const parsePrice = s => {
-  const n = Number(String(s).trim().replace(',', '.'));
-  return Number.isFinite(n) && n > 0 ? n : null;
+  const m = /^(\d{1,6})(?:[.,](\d{1,2}))?$/.exec(String(s).trim());
+  if (!m) return null;
+  const n = Number(m[1]) + Number((m[2] || '').padEnd(2, '0')) / 100;
+  return n > 0 ? n : null;
 };
 const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 

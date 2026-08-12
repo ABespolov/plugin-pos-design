@@ -153,9 +153,14 @@ exception is `--shadow-sheet`, for a sheet floating over the screen.
 
 ## Touch targets
 
-`--h-sm` 36 · `--h-md` 48 · `--h-lg` 60. 48 is the default because the POS is
-tapped at arm's length, often one-handed, in a hurry. Standalone icon buttons
-get a 44×44 hit area even when the glyph is smaller.
+`--h-sm` 36 · `--h-md` 48. 48 is the default because the POS is tapped at arm's
+length, often one-handed, in a hurry; 36 is for a control sitting inside another
+one — Clear on the slab header, the sheet's commit. Standalone icon buttons get a
+44×44 hit area even when the glyph is smaller.
+
+There is no third step. A 60-px `--h-lg` existed and no drawn screen ever used
+it, so it was a size the Flutter port would have carried, mirrored and enumerated
+for nobody. If a screen needs one, it gets added back with that screen.
 
 ## Motion
 
@@ -236,8 +241,10 @@ Lucide via CDN, through the `I = {...}` map and `ico(name, size)` in
 <https://lucide.dev/icons>, add one line to `I`.
 
 Don't write inline `<svg>`, don't use emoji as iconography, don't scale with
-`transform: scale()`. The same Lucide names map to `flutter_lucide` in
-snake_case (`MapPin` → `LucideIcons.mapPin`).
+`transform: scale()`. The same Lucide names map to `flutter_lucide`, which spells
+them in snake_case: `MapPin` → `LucideIcons.map_pin`, `Trash2` →
+`LucideIcons.trash_2`, `ChevronRight` → `LucideIcons.chevron_right`. Verified
+against the package, not assumed — the identifiers are not lowerCamelCase.
 
 ## Imagery
 

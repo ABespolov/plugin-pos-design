@@ -61,9 +61,9 @@ const SHEET_MS = 280;
 // accent, so the strongest action on paper is ink. `live` is the only cyan
 // button and it may ONLY be placed on the ink slab.
 function Btn({ children, kind = 'slab', size = 'md', icon, full, onClick, style = {}, disabled, className }) {
-  const heights = { sm: 'var(--h-sm)', md: 'var(--h-md)', lg: 'var(--h-lg)' };
-  const px = { sm: 14, md: 20, lg: 26 };
-  const fs = { sm: 'var(--t-body-sm)', md: 'var(--t-body)', lg: 'var(--t-body-lg)' };
+  const heights = { sm: 'var(--h-sm)', md: 'var(--h-md)' };
+  const px = { sm: 14, md: 20 };
+  const fs = { sm: 'var(--t-body-sm)', md: 'var(--t-body)' };
   const kinds = {
     slab:      { bg: 'var(--c-action)', fg: 'var(--c-on-action)', bd: 'transparent' },
     outline:   { bg: 'transparent', fg: 'var(--c-ink)', bd: 'var(--c-line-strong)' },

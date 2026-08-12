@@ -105,7 +105,6 @@
   /* ── Control heights — tablet-first ───────────────────────── */
   --h-sm: 36px;
   --h-md: 48px;
-  --h-lg: 60px;
   /* One order line. Every container that holds lines is a multiple of this, so
      a row can never come to rest sliced in half. Mirrored as ORDER_ROW_H in
      ui.jsx, which needs the number to do that arithmetic. */

@@ -147,9 +147,12 @@ const STILL_TIMELINE = {
 // list would stop being a multiple of the row.
 const SLAB_HEAD_H = 68;    // holds whether or not Clear is showing
 const SLAB_ROWS = 3;       // whole order lines visible at rest
-const SLAB_ROWS_MAX = 14;  // ceiling when expanded: the most whole rows that
+const SLAB_ROWS_MAX = 13;  // ceiling when expanded: the most whole rows that
                            // still leave the category chips uncovered, so the
-                           // menu is not simply gone while the ticket is read
+                           // menu is not simply gone while the ticket is read.
+                           // Thirteen, not fourteen: this canvas has no status
+                           // bar and a tablet does, and the row it costs is
+                           // cheaper than a slab that overflows the screen
 const SLAB_TOTAL_H = 108;
 const slabHeight = rows => SLAB_HEAD_H + ORDER_ROW_H * rows + 1 + SLAB_TOTAL_H;
 const SLAB_H = slabHeight(SLAB_ROWS);
@@ -178,17 +181,19 @@ function POSOrder({ state }) {
   const [changes, setChanges] = React.useState(() => seed.map(changeOf));
   const [seen, setSeen] = React.useState(() => new Set());
   const [loading, setLoading] = React.useState(!still || state === 'loading');
-  // A still that has already received a price change has to have received it on
-  // the ticket too — the whole point of that frame is that the money moved.
-  const [lines, setLines] = React.useState(() => seed.reduce((ls, ev) =>
-    ev.kind === 'price' ? ls.map(l => l.name === ev.name ? { ...l, unit: ev.price } : l) : ls,
-    state === 'empty' || blank ? [] : state === 'open' ? LONG_ORDER : START_ORDER));
+  // A re-price does NOT reach the ticket: a quoted price must not change under
+  // an open order, so the line keeps the unit it was rung up at and the note is
+  // the whole of what the cashier is told. The frame's point is the divergence,
+  // not the money moving.
+  const [lines, setLines] = React.useState(() =>
+    state === 'empty' || blank ? [] : state === 'open' ? LONG_ORDER : START_ORDER);
   // The last item touched from the menu. `n` counts taps so that hitting the
   // same item twice is two events; `bumped` says the line already existed, so
   // it needs emphasis rather than the arrival animation it will never play.
   const [touch, setTouch] = React.useState({ name: null, n: 0, bumped: false });
-  // Lines that have been removed and are still closing.
-  const [going, setGoing] = React.useState([]);
+  // Lines the cashier took off, still collapsing: each holds the timer that will
+  // take it off the ticket, so ringing it up again just cancels that timer.
+  const [going, setGoing] = React.useState({});
   const [cat, setCat] = React.useState('Coffee');
   const [expanded, setExpanded] = React.useState(state === 'open');
   // Captured when it opens, not derived live: sizing the sheet to the ticket
@@ -214,9 +219,6 @@ function POSOrder({ state }) {
     const timers = PROTO_TIMELINE.map((ev, n) => setTimeout(() => {
       setItems(prev => applyChange(prev, ev));
       setChanges(prev => [...prev, changeOf(ev, n)]);
-      if (ev.kind === 'price') {
-        setLines(prev => prev.map(l => l.name === ev.name ? { ...l, unit: ev.price } : l));
-      }
     }, ev.at));
     return () => timers.forEach(clearTimeout);
   }, [still]);
@@ -242,7 +244,8 @@ function POSOrder({ state }) {
     // Ringing something up again while its row is still closing cancels the
     // closing — otherwise the timer would take away a line the cashier has just
     // put back.
-    setGoing(g => g.filter(n => n !== item.name));
+    clearTimeout(going[item.name]);
+    setGoing(({ [item.name]: _, ...rest }) => rest);
     setLines(ls => {
       const cur = ls.find(l => l.name === item.name);
       return [{ name: item.name, unit: item.price, qty: cur ? cur.qty + 1 : 1 },
@@ -252,26 +255,33 @@ function POSOrder({ state }) {
   };
   // A line leaves the way it arrived: it closes, and the lines under it are
   // pulled up by that closing. Which means it has to stay in the ticket until
-  // the closing has finished — hence the two steps rather than one filter.
-  const drop = name => {
-    setGoing(g => [...g, name]);
-    setTimeout(() => {
-      setLines(ls => ls.filter(l => l.name !== name));
-      setGoing(g => g.filter(n => n !== name));
-    }, UI_MS);
+  // the closing has finished — hence the timer rather than one filter.
+  const close = names => {
+    const timers = {};
+    names.forEach(name => {
+      clearTimeout(going[name]);
+      timers[name] = setTimeout(() => drop(name), UI_MS);
+    });
+    setGoing(g => ({ ...g, ...timers }));
   };
+  const drop = name => {
+    setGoing(({ [name]: _, ...rest }) => rest);
+    setLines(ls => ls.filter(l => l.name !== name));
+  };
+  // A ticket that shrinks back to what fits closes the sheet, or growing again
+  // would re-open it by itself at the row count it was captured with.
+  React.useEffect(() => {
+    if (lines.length <= SLAB_ROWS) setExpanded(false);
+  }, [lines.length]);
   const bump = (name, d) => {
     const l = lines.find(x => x.name === name);
-    if (l && l.qty + d < 1) return drop(name);
+    if (l && l.qty + d < 1) return close([name]);
     setLines(ls => ls.map(x => x.name === name ? { ...x, qty: x.qty + d } : x));
   };
   // Clear empties the ticket in one movement rather than in as many movements as
   // there are lines: every row closes at once, and the panel is empty when they
   // have. The panel itself never moves, so there is nothing else going on.
-  const clear = () => {
-    setGoing(lines.map(l => l.name));
-    setTimeout(() => { setLines([]); setGoing([]); }, UI_MS);
-  };
+  const clear = () => close(lines.map(l => l.name));
 
   const categories = catsOf(items);
   const shown = items.filter(i => i.category === cat);
@@ -284,11 +294,14 @@ function POSOrder({ state }) {
   // What a line has to say about itself. One slot, four possible messages, and
   // the tone carries which: red means you can no longer sell it, cyan means the
   // number beside it is not the number that was there a minute ago.
-  const stateOf = ({ name }) => {
+  // Read off the menu rather than off the change log: the note shows exactly
+  // while the line is being sold at a price the menu no longer lists, and it
+  // clears by itself when the item is rung up again at the new one.
+  const stateOf = ({ name, unit }) => {
     const item = items.find(i => i.name === name);
     if (!item) return { note: { tone: 'blocked', text: 'Off the menu' }, stopped: true };
     if (!item.available) return { note: { tone: 'blocked', text: 'Sold out' }, stopped: true };
-    if ((changeFor(name) || {}).kind === 'price') return { note: { tone: 'live', text: 'New price' } };
+    if (item.price !== unit) return { note: { tone: 'live', text: 'New price' } };
     return {};
   };
 
@@ -415,7 +428,7 @@ function POSOrder({ state }) {
           ) : ticket.map(l => (
             <OrderLine key={l.name} name={l.name} qty={l.qty} price={money(l.unit * l.qty)}
               {...stateOf(l)}
-              live={edgeFor(l.name)} leaving={going.includes(l.name)}
+              live={edgeFor(l.name)} leaving={l.name in going}
               emphasis={touch.bumped && touch.name === l.name ? touch.n : 0}
               onDec={() => bump(l.name, -1)}
               onInc={() => bump(l.name, +1)}
